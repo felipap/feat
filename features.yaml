@@ -1,0 +1,45 @@
+# declare Sales(shop:Shops.id, item:Items.id, tblock:int16)
+# declare Shops(id)
+# declare Items(id)
+# output Matrix(shop:Shops.id, item:Items.id, date:Date)
+
+# tblock: MONTH_BLOCK(date)
+
+# relationship Matrix.shop=Shops.id
+# relationship Matrix.item=Items.id
+# relationship Items.category=Categories.id
+
+FWD(tcount,1|tblock,shop,item)
+FWD(tcount,2|tblock,shop,item)
+FWD(tcount,3|tblock,shop,item)
+FWD(tcount,6|tblock,shop,item)
+FWD(tcount,12|tblock,shop,item)
+
+FWD(MEAN(tcount|tblock),1|tblock)
+
+FWD(MEAN(tcount|tblock,item),1)
+FWD(MEAN(tcount|tblock,item),2)
+FWD(MEAN(tcount|tblock,item),3)
+FWD(MEAN(tcount|tblock,item),6)
+FWD(MEAN(tcount|tblock,item),12)
+
+FWD(MEAN(tcount|tblock,shop),1)
+FWD(MEAN(tcount|tblock,shop),2)
+FWD(MEAN(tcount|tblock,shop),3)
+FWD(MEAN(tcount|tblock,shop),6)
+FWD(MEAN(tcount|tblock,shop),12)
+
+FWD(MEAN(tcount|tblock,item.category),1|tblock,item.category)
+FWD(MEAN(tcount|tblock,shop,item.category),1)
+FWD(MEAN(tcount|tblock,shop,item.category.type_code),1)
+FWD(MEAN(tcount|tblock,shop,item.category.subtype_code),1)
+FWD(MEAN(tcount|tblock,shop.city_code),1)
+FWD(MEAN(tcount|tblock,item,shop.city_code),1)
+FWD(MEAN(tcount|tblock,item.category.type_code),1)
+FWD(MEAN(tcount|tblock,item.category.subtype_code),1)
+
+Matrix.GET(FWD(Sales.MEAN_DIFF(MEAN(item_cnt_day|item,tblock)),1))
+Matrix.GET(FWD(Sales.MEAN_DIFF(SUM(revenue|shop,tblock)),1))
+
+# Matrix.GET(Sales.MEAN(item_cnt_day|item,tblock))
+# Matrix.GET(Sales.SUM(revenue|shop,tblock)|shop,tblock)

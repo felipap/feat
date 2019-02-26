@@ -1,0 +1,43 @@
+command:
+  | command_rel
+  | root_column -> command_col
+
+command_rel: "relationship" TABLE_NAME"."LOWERCASE "=" TABLE_NAME"."LOWERCASE
+
+// A `root_column` describes a column that might belong to a different
+// data frame. Eg: Transactions.product
+root_column:
+  | this_column
+  | TABLE_NAME "." this_column
+
+// A `this_column` describes a column that is related 1:1 to the current
+// dataframe. Eg: product.category.name
+this_column:
+  | LOWERCASE
+  | LOWERCASE "." this_column
+  | fn_call
+
+fn_call: FUNCTION_NAME "(" fn_args (groupby)?")"
+fn_args: fn_arg ("," fn_arg)*
+fn_arg:
+  | root_column
+  | primitive
+
+groupby: "|" this_column ("," this_column)*
+
+primitive:
+  | NUMBER -> number
+//  | "`" /[^``]*/ "`" -> escaped
+//  | "[" [primitive ("," primitive)*] "]" -> array
+
+FUNCTION_NAME: /[A-Z_]+/
+TABLE_NAME: /[A-Z][a-z_]*/
+LOWERCASE: /[a-z_]+/
+
+%import common.CNAME
+%import common.ESCAPED_STRING
+%import common.UCASE_LETTER
+%import common.LCASE_LETTER
+%import common.NUMBER
+%import common.WS
+%ignore WS
