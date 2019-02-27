@@ -7,9 +7,9 @@ from functools import wraps
 import numpy as np
 import pandas as pd
 
-from Frame import Frame
-from Context import Context
-from common import getFunctions
+from .Frame import Frame
+from .Context import Context
+from .common import getFunctions
 
 TIME_COL = 'month_block'
 
@@ -61,12 +61,21 @@ def genColumn(ctx, tree):
       # display("now is", result.getStripped())
       # display(ctx.df)
 
+      # FIXME Even if df of child is different (eg. Items.MEAN(Sales.item)), we are
+      # merging based on the child's columns, without any warning or thinking about it
+      # deeper
+
+      if not set(result.pivots).issubset(ctx.df.columns):
+        raise Exception('Result can\'t be merged into current dataset: ', \
+          result.pivots, ctx.df.columns)
+
       if result.colName not in ctx.df.columns:
         ctx.df = pd.merge(ctx.df, \
           result.getStripped(), \
           on=list(result.pivots), \
           how='left', \
           suffixes=(False, False))
+
       return result
     else:
       assert tree['this'] in ctx.df.columns, "Terminal node isn't a " \

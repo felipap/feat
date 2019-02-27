@@ -1,7 +1,8 @@
 
+from datetime import datetime
 import time
 
-from Frame import Frame
+from .Frame import Frame
 
 import numpy as np
 import pandas as pd
@@ -176,6 +177,30 @@ class Mean(object):
     result.fillData(agg)
     return result
 
+class CMonth(object):
+  name = 'CMonth'
+  keyword = 'CMONTH'
+
+  args = 1
+
+  def fn(ctx, tree, genColumn, keyCols):
+      name = tree['name']
+      child = tree['args'][0]
+      childName = child['name']
+
+      childResult = genColumn(child)
+
+      result = Frame(ctx.current, childResult.getPivots(), name)
+
+      def apply(row):
+          parsed = datetime.strptime(row['date'], '%Y-%m-%d')
+          return (parsed.year - 2000)*12+parsed.month
+
+      df = childResult.getStripped().copy()
+      df[name] = df.apply(apply, axis=1)
+
+      result.fillData(df)
+      return result
 
 class Sum(object):
   name = 'Sum'
@@ -191,6 +216,8 @@ class Sum(object):
 
     childResult = genColumn(child)
 
+    # FIXME: childResult should be used to generate the thing below, not ctx.df and
+    # childName
     agg = ctx.df.groupby(keyCols).agg({ childName: ['sum'] })
 
     agg.columns = [name]
@@ -200,10 +227,10 @@ class Sum(object):
     result.fillData(agg)
     return result
 
-allClasses = [Forward, MeanDiff, Sum, Mean, Get]
+allFunctions = [CMonth, Forward, MeanDiff, Sum, Mean, Get]
 
 def getFunctions():
   fns = {}
-  for cls in allClasses:
+  for cls in allFunctions:
     fns[cls.keyword] = cls.fn
   return fns

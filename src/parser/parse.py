@@ -1,8 +1,14 @@
 # https://github.com/lark-parser/lark/blob/master/docs/lark_cheatsheet.pdf
 
+from os import path
 from functools import wraps
+import importlib
 
 from lark import Lark, Transformer, v_args, Token, Tree
+
+# TODO: consider using https://docs.python.org/3.7/library/importlib.html#module-importlib.resources
+LOCAL_DIR = path.dirname(path.realpath(__file__))
+GRAMMAR_FILE_PATH = path.join(LOCAL_DIR, 'grammar.lark')
 
 def annotate_match(method):
   """Adds a 'name' field to the dictionary result of the decorated method, corresponding to
@@ -126,7 +132,7 @@ class JSONifier(Transformer):
   number = v_args(inline=True)(float)
 
 def parseLineToCommand(string):
-  grammar = open('./grammar.lark').read()
+  grammar = open(GRAMMAR_FILE_PATH).read()
 
   json_parser = Lark(
     grammar,
