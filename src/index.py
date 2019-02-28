@@ -1,74 +1,96 @@
 
 import builtins
 import pandas as pd
+import numpy as np
+
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 from .Context import Context
-from .lib import process
+from .lib import genColumn
 from .parser import parseLineToCommand
 
 def genMonthCount(start, end):
   curr = start
   while curr < end:
-    yield curr
+    yield (curr.year - 2000)*12+curr.month
     curr += relativedelta(months=1)
 
+
+def genUniqueProduct(colUniqueVals, dataframes):
+  many = 1
+  for values in colUniqueVals.values():
+    assert type(values) == list
+    many *= len(values)
+
+  # TODO improve check
+  print("many is", many)
+  assert many < 50*1000*1000
+
+  # TODO one of the Kaggle solutions is smarter than just doing a complete product
+  # for date in genMonthCount(start, end):
+  #   _sales = train[train.month_block==date]
+  #   m2.append(np.array(list(product([date], _sales.shop.unique(), _sales.item.unique())), dtype='int16'))
+
+  df = pd.DataFrame().assign(key=1)
+  # Generate cartesian product of the columns in colUniqueVals
+  # Uses https://stackoverflow.com/questions/13269890
+  for key, values in colUniqueVals.items():
+    this = pd.DataFrame({ key: values })
+    df = pd.merge(df, this.assign(key=1), on='key', how='outer')
+  df.drop('key', axis=1, inplace=True)
+
+  # REVIEW decide what to do with types
+  for column in df.columns:
+    # Convert all but datetime cols??
+    if df[column].dtype == np.dtype('datetime64[ns]'):
+      continue
+    df[column] = df[column].astype(np.int16)
+
+  return df
+
+
 def genOutputMatrix(dataframes, shape):
-  cols = ['month_block', 'shop', 'item']
+  cols = ['CMONTH(date)', 'shop', 'item']
 
   config = shape['config']
 
-  outputPivotVals = {}
-
+  colUniqueVals = {}
   assert '__DATE__' in shape['config']['output_pivots']
-  for col in set(shape['config']['output_pivots'])-{'__DATE__'}:
-    df = dataframes[col]
-    assert col in shape['pivots'], col
-    assert len(shape['pivots'][col]) == 1
-    dfKey = shape['pivots'][col][0]
-    print("asdf", dfKey)
-    outputPivotVals[col.lower()] = df[dfKey].unique()
+
+  print(shape['config']['output_pivots'])
+
+  for column, tableField in shape['config']['output_pivots'].items():
+    if column == '__DATE__':
+      continue
+
+    tableIn, keyIn = tableField.split('.')
+
+    df = dataframes[tableIn]
+    assert tableIn in shape['pivots']
+    assert keyIn in shape['pivots'][tableIn]
+
+    colUniqueVals[column.lower()] = list(df[keyIn].unique())
+
+  print("colUniqueVals", colUniqueVals.keys())
 
   start = datetime.strptime(config['date_start'], '%Y-%m-%d')
   end = datetime.strptime(config['date_end'], '%Y-%m-%d')
 
-  outputPivotVals['MCOUNT(date)'] = list(genMonthCount(start, end))
+  colUniqueVals['CMONTH(date)'] = list(genMonthCount(start, end))
 
-  m2 = []
-  for date in genMonthCount(start, end):
-    _sales = train[train.month_block==date]
-    assert len(sales)
-    m2.append(np.array(list(product([date], _sales.shop.unique(), _sales.item.unique())), dtype='int16'))
-
-  matrix = pd.DataFrame(np.vstack(m2), columns=cols)
-  matrix['month_block'] = matrix['month_block'].astype(np.int16)
-
-  matrix['shop'] = matrix['shop'].astype(np.int16)
-  matrix['item'] = matrix['item'].astype(np.int16)
-
-  matrix.sort_values(cols, inplace=True)
-
-  # felipap: using 'train', which lists demand by day ('date' attr), sum
-  # up to create 'group', which lists total demand that month
-
-  group = train.groupby(['month_block','shop','item']).agg({
-      'item_cnt_day': ['sum'],
-  })
-  # print(group)
-  group.columns = ['item_cnt_month']
-  group.reset_index(inplace=True)
+  matrix = genUniqueProduct(colUniqueVals, dataframes)
 
   # Aggregate train set by shop/item pairs to calculate target
   # aggreagates, then <b>clip(0,20)</b> target value. This way train
   # target will be similar to the test predictions.
 
   # felipap: add item_ctn_month column to 'matrix'
-  matrix = pd.merge(matrix, group, on=cols, how='left')
-  matrix['item_cnt_month'] = (matrix['item_cnt_month']
-                                  .fillna(0)
-                                  .clip(0,20) # NB clip target here
-                                  .astype(np.float16))
+  # matrix = pd.merge(matrix, group, on=cols, how='left')
+  # matrix['item_cnt_month'] = (matrix['item_cnt_month']
+  #                                 .fillna(0)
+  #                                 .clip(0,20) # NB clip target here
+  #                                 .astype(np.float16))
 
   # I use floats instead of ints for item_cnt_month to avoid
   # downcasting it after concatination with the test set later. If
@@ -83,7 +105,7 @@ import builtins
 def processShape(shape, dataframes):
   dataframes['Matrix'] = genOutputMatrix(dataframes, shape)
 
-  builtins.context = Context(dataframes, 'Matrix', 'month_block')
+  builtins.context = Context(dataframes, 'Matrix', 'CMONTH(date)')
 
   context.rels = set(
     (*val.split('.'),*key.split('.'))
@@ -91,11 +113,17 @@ def processShape(shape, dataframes):
   )
   print(context.rels)
   context.pivots = shape['pivots']
+  context.pivots['Matrix'] = {'CMONTH(date)','shop','item'}
+
+  cmd = parseLineToCommand("Matrix.GET(%s)" % shape['config']['output_col'])
+  # context.globals['Matrix'][shape['config']['output_col']] ==
+  genColumn(context, cmd['column'])
 
   for index, feature in enumerate(shape['features']):
-      print('Processing {}/{}: {}'.format(index+1, len(shape['features']), feature))
-      cmd = parseLineToCommand(feature)
-      # pprint.pprint(cmd)
-      process(context, cmd)
-      display(context.df)
-      break
+    print('Processing {}/{}: {}'.format(index+1, len(shape['features']), feature))
+    cmd = parseLineToCommand(feature)
+    # TODO validate tree
+    # pprint.pprint(cmd)
+    genColumn(context, cmd['column'])
+  display(context.df)
+      # break

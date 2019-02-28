@@ -15,6 +15,22 @@ TIME_COL = 'month_block'
 
 functions = getFunctions()
 
+def logErrors(function):
+  @wraps(function)
+  def foo(ctx, tree):
+    try:
+      result = function(ctx, tree)
+    except Exception as e:
+      print("Error with", ctx.current, tree['name'])
+      raise e
+
+    # assert result.__class__.__name__ == 'Frame', result.__class__.__name__
+    # assert isinstance(result, Frame) # Won't work with jupyter autoreload.
+
+    # assert isinstance(result, Frame), "%s isn't Frame" % result
+    return result
+  return foo
+
 def assertReturnsFrame(function):
   @wraps(function)
   def foo(*args, **kwargs):
@@ -52,9 +68,16 @@ def execFunction(context, tree):
 
   return result
 
+
+@logErrors
 @assertReturnsFrame
 def genColumn(ctx, tree):
   if tree.get('is_terminal'):
+    if tree.get('name') in ctx.df.columns:
+      result = Frame(ctx.current, ctx.pivots[ctx.current], tree['name'])
+      result.fillData(ctx.df)
+      return result
+
     if tree.get('function'):
       result = execFunction(ctx, tree)
 
@@ -78,6 +101,7 @@ def genColumn(ctx, tree):
 
       return result
     else:
+      print(tree['this'], ctx.current)
       assert tree['this'] in ctx.df.columns, "Terminal node isn't a " \
       "function, so expected a string that belongs to the dataframe."
 
@@ -88,7 +112,9 @@ def genColumn(ctx, tree):
   # If column was already generated, stop.
   # NOTE Something won't work here because of the A.b.c vs. B.c!!!!!
   if tree['name'] in ctx.df.columns:
-    result = Frame(ctx.current, ctx.pivots[ctx.current], tree['this'])
+    # if 'this' not in tree:
+    #   print(tree)
+    result = Frame(ctx.current, ctx.pivots[ctx.current], tree['name'])
     result.fillData(ctx.df)
     return result
 
@@ -150,40 +176,3 @@ def genColumn(ctx, tree):
   result = Frame(ctx.current, ctx.pivots[ctx.current], tree['name'])
   result.fillData(ctx.df)
   return result
-
-# TODO
-# def validateTree(tree):
-#   # Check name at every level?
-
-def process(ctx, cmd):
-  # print(cmd)
-  #   # if cmd['command'] == 'add_relationship':
-  if cmd['command'] == 'command_rel':
-    ctx.addRelationship(cmd['table1'], cmd['col1'], cmd['table2'], cmd['col2'])
-    print(ctx.rels)
-    # assert cmd['table1'] == 'Matrix'
-    # table2 = ctx.others[cmd['table2']].copy()
-    # table2.columns = ["%s.%s" % (cmd['col1'], col) for col in table2.columns]
-    # joinCol = '%s.%s' % (cmd['col1'], cmd['col2'])
-    # print(table2.columns)
-    # ctx.df = pd.merge(ctx.df, table2, how='left', left_on=[cmd['col1']], right_on=[joinCol], suffixes=(False, False))
-  elif cmd['command'] == 'command_col':
-    genColumn(ctx, cmd['column'])
-
-    # if cmd['context'] != ctx.current:
-    #   them = ctx.globals[cmd['context']]
-    #
-    #   what = them[list(set(cmd['groupby'])|set([cmd['name']]))]
-    #   what.drop_duplicates(cmd['groupby'], inplace=True)
-    #   display(what)
-
-    # a = pd.merge(ctx.df, \
-    #   them[list(set(cmd['groupby'])|set([cmd['name']]))], \
-    #   on=list(cmd['groupby']), \
-    #   how='left', \
-    #   suffixes=(False, False))
-    # display("a", a)
-#
-#   # return pd.merge(this, newCol, on=cmd['pivot'], how='left')
-#   # display(newCol)
-#   return ctx

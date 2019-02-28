@@ -184,23 +184,27 @@ class CMonth(object):
   args = 1
 
   def fn(ctx, tree, genColumn, keyCols):
-      name = tree['name']
-      child = tree['args'][0]
-      childName = child['name']
+    name = tree['name']
+    child = tree['args'][0]
+    childName = child['name']
 
-      childResult = genColumn(child)
+    childResult = genColumn(child)
 
-      result = Frame(ctx.current, childResult.getPivots(), name)
+    result = Frame(ctx.current, childResult.getPivots(), name)
 
-      def apply(row):
-          parsed = datetime.strptime(row['date'], '%Y-%m-%d')
-          return (parsed.year - 2000)*12+parsed.month
+    assert 'date' in childResult.getStripped().columns
 
-      df = childResult.getStripped().copy()
-      df[name] = df.apply(apply, axis=1)
+    assert childResult.getStripped().date.dtype == np.dtype('datetime64[ns]')
 
-      result.fillData(df)
-      return result
+    def apply(row):
+      parsed = row.date # datetime.strptime(row['date'], '%Y-%m-%d')
+      return (parsed.year - 2000)*12+parsed.month
+
+    df = childResult.getStripped().copy()
+    df[name] = df.apply(apply, axis=1)
+
+    result.fillData(df)
+    return result
 
 class Sum(object):
   name = 'Sum'

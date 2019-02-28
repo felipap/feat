@@ -1,11 +1,14 @@
 {
-  "output": "Matrix(shop:Shops.id, item:Items.id, date:Date)",
-
   "config": {
-    "date_block": "MONTH_BLOCK(date)",
+    "date_block": "CMONTH(date)",
     "date_start": "2013-01-01",
-    "date_end": "2015-01-01",
-    "output_pivots": ["Items", "Shops", "__DATE__"],
+    "date_end": "2015-10-01",
+    "output_pivots": {
+      "item": "Items.id",
+      "shop": "Shops.id",
+      "__DATE__": "__DATE__",
+    },
+    "output_col": "Sales.SUM(item_cnt_day|CMONTH(date))",
   },
 
   // "tables": [
@@ -15,8 +18,26 @@
   // ],
 
   // TODO: think of using table above instead of these two
+  // "tables": {
+  //   "Items": {
+  //     "pivots": ["id"],
+  //     "pointers": { "category": "Categories.id" },
+  //   },
+  //   "Categories": {
+  //     "pivots": ["id"],
+  //     "pointers": {},
+  //   },
+  //   "Shops": {
+  //     "pivots": ["id"],
+  //     "pointers": {},
+  //   },
+  //   "Sales": {
+  //     "pivots": ["item", "shop", "date"],
+  //     "pointers": {},
+  //   },
+  // },
+
   "pivots": {
-    // "Matrix": ["item", "shop", "month_block"],
     "Items": ["id"],
     "Categories": ["id"],
     "Shops": ["id"],
@@ -30,32 +51,33 @@
   },
 
   "features": [
-    "Matrix.GET(Sales.GET(MEAN(item_cnt_day|CMONTH(date),shop)))",
-    "Sales.GET(MEAN(item_cnt_day|CMONTH(date),shop))",
-    // "FWD(tcount,1|CMONTH(date),shop,item)",
-    // "FWD(tcount,2|CMONTH(date),shop,item)",
-    // "FWD(tcount,3|CMONTH(date),shop,item)",
-    // "FWD(tcount,6|CMONTH(date),shop,item)",
-    // "FWD(tcount,12|CMONTH(date),shop,item)",
-    // "FWD(MEAN(tcount|CMONTH(date)),1|CMONTH(date))",
-    // "FWD(MEAN(tcount|CMONTH(date),item),1)",
-    // "FWD(MEAN(tcount|CMONTH(date),item),2)",
-    // "FWD(MEAN(tcount|CMONTH(date),item),3)",
-    // "FWD(MEAN(tcount|CMONTH(date),item),6)",
-    // "FWD(MEAN(tcount|CMONTH(date),item),12)",
-    // "FWD(MEAN(tcount|CMONTH(date),shop),1)",
-    // "FWD(MEAN(tcount|CMONTH(date),shop),2)",
-    // "FWD(MEAN(tcount|CMONTH(date),shop),3)",
-    // "FWD(MEAN(tcount|CMONTH(date),shop),6)",
-    // "FWD(MEAN(tcount|CMONTH(date),shop),12)",
-    // "FWD(MEAN(tcount|CMONTH(date),item.category),1|CMONTH(date),item.category)",
-    // "FWD(MEAN(tcount|CMONTH(date),shop,item.category),1)",
-    // "FWD(MEAN(tcount|CMONTH(date),shop,item.category.type_code),1)",
-    // "FWD(MEAN(tcount|CMONTH(date),shop,item.category.subtype_code),1)",
-    // "FWD(MEAN(tcount|CMONTH(date),shop.city_code),1)",
-    // "FWD(MEAN(tcount|CMONTH(date),item,shop.city_code),1)",
-    // "FWD(MEAN(tcount|CMONTH(date),item.category.type_code),1)",
-    // "FWD(MEAN(tcount|CMONTH(date),item.category.subtype_code),1)",
+    // "Matrix.GET(Sales.SUM(item_cnt_day|CMONTH(date)))",
+    // "Sales.GET(MEAN(item_cnt_day|CMONTH(date),shop))",
+    "FWD(Sales.SUM(item_cnt_day|CMONTH(date)),1|CMONTH(date),shop,item)",
+    "FWD(Sales.SUM(item_cnt_day|CMONTH(date)),1|CMONTH(date),shop,item)",
+    "FWD(Sales.SUM(item_cnt_day|CMONTH(date)),2|CMONTH(date),shop,item)",
+    "FWD(Sales.SUM(item_cnt_day|CMONTH(date)),3|CMONTH(date),shop,item)",
+    "FWD(Sales.SUM(item_cnt_day|CMONTH(date)),6|CMONTH(date),shop,item)",
+    "FWD(Sales.SUM(item_cnt_day|CMONTH(date)),12|CMONTH(date),shop,item)",
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date)),1|CMONTH(date))",
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),item),1)",
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),item),2)",
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),item),3)",
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),item),6)",
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),item),12)",
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),shop),1)",
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),shop),2)",
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),shop),3)",
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),shop),6)",
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),shop),12)",
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),item.category),1|CMONTH(date),item.category)",
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),shop,item.category),1)",
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),shop,item.category.type_code),1)",
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),shop,item.category.subtype_code),1)",
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),shop.city_code),1)",
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),item,shop.city_code),1)",
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),item.category.type_code),1)",
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),item.category.subtype_code),1)",
     //
     // "Matrix.GET(FWD(Sales.MEAN_DIFF(MEAN(item_cnt_day|item,CMONTH(date))),1))",
     // "Matrix.GET(FWD(Sales.MEAN_DIFF(SUM(revenue|shop,CMONTH(date))),1))",
