@@ -8,16 +8,9 @@
       "shop": "Shops.id",
       "__DATE__": "__DATE__",
     },
-    "output_col": "Sales.SUM(item_cnt_day|CMONTH(date))",
+    "output_col": "Sales.SUM(item_cnt_day|CMONTH(date),shop,item)",
   },
 
-  // "tables": [
-  //   "Sales(shop:Shops.id, item:Items.id, [block:int16)",
-  //   "Shops(id)",
-  //   "Items(id)",
-  // ],
-
-  // TODO: think of using table above instead of these two
   // "tables": {
   //   "Items": {
   //     "pivots": ["id"],

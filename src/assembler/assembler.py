@@ -7,13 +7,10 @@ from functools import wraps
 import numpy as np
 import pandas as pd
 
-from .Frame import Frame
-from .Context import Context
-from .common import getFunctions
+from ..common import Context, Frame
+from ..globals import globals as globalFunctions
 
 TIME_COL = 'month_block'
-
-functions = getFunctions()
 
 def logErrors(function):
   @wraps(function)
@@ -46,22 +43,22 @@ def assertReturnsFrame(function):
 # @assertReturnsFrame
 def execFunction(context, tree):
   keyword = tree['function']
-  if tree['function'] not in functions:
+  if tree['function'] not in globalFunctions:
     raise Exception('Unregistered function %s' % tree['function'])
 
   groupby = None
   if tree.get('groupby'):
     for g in tree['groupby']:
-      genColumn(context, g)
+      assemble(context, g)
 
     groupby = [f['name'] for f in tree['groupby']]
 
-  def genColumnClosure(childTree):
-    # We pass a 'closured' function to make sure functions won't try to do
+  def generateClosure(childTree):
+    # We pass a 'closured' function to make sure globalFunctions won't try to do
     # something funny.
-    return genColumn(context, childTree)
+    return assemble(context, childTree)
 
-  result = functions[tree['function']](context, tree, genColumnClosure, groupby)
+  result = globalFunctions[tree['function']](context, tree, generateClosure, groupby)
 
   # assert result.__class__.__name__ == 'Frame', result.__class__.__name__
   # assert isinstance(result, Frame) # Won't work with jupyter autoreload.
@@ -71,7 +68,7 @@ def execFunction(context, tree):
 
 @logErrors
 @assertReturnsFrame
-def genColumn(ctx, tree):
+def assemble(ctx, tree):
   if tree.get('is_terminal'):
     if tree.get('name') in ctx.df.columns:
       result = Frame(ctx.current, ctx.pivots[ctx.current], tree['name'])
@@ -82,6 +79,8 @@ def genColumn(ctx, tree):
       result = execFunction(ctx, tree)
 
       # display("now is", result.getStripped())
+      # import builtins
+      # builtins.fuck = result.getStripped()
       # display(ctx.df)
 
       # FIXME Even if df of child is different (eg. Items.MEAN(Sales.item)), we are
@@ -119,13 +118,13 @@ def genColumn(ctx, tree):
     return result
 
   # If the tree isn't terminal, it has a child. Update the context appropriately
-  # and call genColumn on the child. First, figure out the appropriate dataframe
+  # and call assemble on the child. First, figure out the appropriate dataframe
   # for the current node.
 
   assert 'next' in tree, "Non-terminal notes must have a child"
   if tree.get('root'):
     oldCurrent = ctx.swapIn(tree['root'])
-    childResult = genColumn(ctx, tree['next'])
+    childResult = assemble(ctx, tree['next'])
     ctx.swapIn(oldCurrent)
 
     return childResult.getWithNamedRoot(tree['root'])
@@ -147,7 +146,7 @@ def genColumn(ctx, tree):
 
   # Execute child with context of tableIn.
   ctx.swapIn(tableIn)
-  childResult = genColumn(ctx, tree['next'])
+  childResult = assemble(ctx, tree['next'])
   ctx.swapIn(tableOut)
 
   nestedChild = childResult.getAsNested(tableOut, keyOut)

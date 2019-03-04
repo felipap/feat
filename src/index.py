@@ -6,8 +6,8 @@ import numpy as np
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
-from .Context import Context
-from .lib import genColumn
+from .common.Context import Context
+from .assembler import assemble
 from .parser import parseLineToCommand
 
 def genMonthCount(start, end):
@@ -45,7 +45,7 @@ def genUniqueProduct(colUniqueVals, dataframes):
     # Convert all but datetime cols??
     if df[column].dtype == np.dtype('datetime64[ns]'):
       continue
-    df[column] = df[column].astype(np.int16)
+    df[column] = df[column].astype(np.int64)
 
   return df
 
@@ -70,16 +70,26 @@ def genOutputMatrix(dataframes, shape):
     assert tableIn in shape['pivots']
     assert keyIn in shape['pivots'][tableIn]
 
-    colUniqueVals[column.lower()] = list(df[keyIn].unique())
+    if 'restrict_ids_to' in config and column in config['restrict_ids_to']:
+      t, f = config['restrict_ids_to'][column].split('.') # eg: Sales.location
+      # possible = set(df[keyIn].unique()) & set(dataframes[t][f].unique())
+      colUniqueVals[column.lower()] = list(set(dataframes[t][f].unique()))
+    else:
+      colUniqueVals[column.lower()] = list(df[keyIn].unique())
+
+  # colUniqueVals['product'] = df[keyIn].unique()
 
   print("colUniqueVals", colUniqueVals.keys())
 
-  start = datetime.strptime(config['date_start'], '%Y-%m-%d')
-  end = datetime.strptime(config['date_end'], '%Y-%m-%d')
+  start = datetime.strptime(config['date_start'], '%Y-%m')
+  end = datetime.strptime(config['date_end'], '%Y-%m')
 
+  builtins.colUniqueVals = colUniqueVals
   colUniqueVals['CMONTH(date)'] = list(genMonthCount(start, end))
 
   matrix = genUniqueProduct(colUniqueVals, dataframes)
+
+  matrix.sort_values(['CMONTH(date)','location','product'], inplace=True)
 
   # Aggregate train set by shop/item pairs to calculate target
   # aggreagates, then <b>clip(0,20)</b> target value. This way train
@@ -99,9 +109,6 @@ def genOutputMatrix(dataframes, shape):
 
   return matrix
 
-
-import builtins
-
 def processShape(shape, dataframes):
   dataframes['Matrix'] = genOutputMatrix(dataframes, shape)
 
@@ -111,19 +118,21 @@ def processShape(shape, dataframes):
     (*val.split('.'),*key.split('.'))
     for (val, key) in shape['pointers'].items()
   )
-  print(context.rels)
   context.pivots = shape['pivots']
-  context.pivots['Matrix'] = {'CMONTH(date)','shop','item'}
+  context.pivots['Matrix'] = {'CMONTH(date)','location','product'}
 
   cmd = parseLineToCommand("Matrix.GET(%s)" % shape['config']['output_col'])
   # context.globals['Matrix'][shape['config']['output_col']] ==
-  genColumn(context, cmd['column'])
+  assemble(context, cmd['column'])
+  context.df[shape['config']['output_col']] = context.df[shape['config']['output_col']].fillna(0)
+
+  builtins.df = context.df
 
   for index, feature in enumerate(shape['features']):
     print('Processing {}/{}: {}'.format(index+1, len(shape['features']), feature))
     cmd = parseLineToCommand(feature)
     # TODO validate tree
     # pprint.pprint(cmd)
-    genColumn(context, cmd['column'])
+    assemble(context, cmd['column'])
   display(context.df)
       # break

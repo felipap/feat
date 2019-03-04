@@ -2,7 +2,7 @@
 from datetime import datetime
 import time
 
-from .Frame import Frame
+from ..common.Frame import Frame
 
 import numpy as np
 import pandas as pd
@@ -145,7 +145,7 @@ class MeanDiff(object):
     result.fillData(grouped)
 
     # agg.columns = [name]
-    # agg[name] = agg[name].astype(np.float16)
+    # agg[name] = agg[name].astype(np.float64)
     # grouped = grouped[list(set([name, ctx.timeCol])|set(groupby))]
     #
     # agg.reset_index(inplace=True)
@@ -171,7 +171,7 @@ class Mean(object):
     agg = ctx.df.groupby(keyCols).agg({ childName: ['mean'] })
 
     agg.columns = [name]
-    agg[name] = agg[name].astype(np.float16)
+    agg[name] = agg[name].astype(np.float64)
     agg.reset_index(inplace=True)
 
     result.fillData(agg)
@@ -198,7 +198,10 @@ class CMonth(object):
 
     def apply(row):
       parsed = row.date # datetime.strptime(row['date'], '%Y-%m-%d')
-      return (parsed.year - 2000)*12+parsed.month
+      try:
+        return int((parsed.year - 2000)*12+parsed.month)
+      except:
+        print("PQPQPQPQ", row)
 
     df = childResult.getStripped().copy()
     df[name] = df.apply(apply, axis=1)
@@ -225,7 +228,7 @@ class Sum(object):
     agg = ctx.df.groupby(keyCols).agg({ childName: ['sum'] })
 
     agg.columns = [name]
-    agg[name] = agg[name].astype(np.float16)
+    agg[name] = agg[name].astype(np.float64)
     agg.reset_index(inplace=True)
 
     result.fillData(agg)
