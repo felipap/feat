@@ -1,8 +1,8 @@
 # TODO: rename context to namespace????
 
+from functools import wraps
 import types
 import time
-from functools import wraps
 
 import numpy as np
 import pandas as pd
@@ -49,14 +49,14 @@ def execFunction(context, tree):
   groupby = None
   if tree.get('groupby'):
     for g in tree['groupby']:
-      assemble(context, g)
+      assembleColumn(context, g)
 
     groupby = [f['name'] for f in tree['groupby']]
 
   def generateClosure(childTree):
     # We pass a 'closured' function to make sure globalFunctions won't try to do
     # something funny.
-    return assemble(context, childTree)
+    return assembleColumn(context, childTree)
 
   result = globalFunctions[tree['function']](context, tree, generateClosure, groupby)
 
@@ -68,7 +68,7 @@ def execFunction(context, tree):
 
 @logErrors
 @assertReturnsFrame
-def assemble(ctx, tree):
+def assembleColumn(ctx, tree):
   if tree.get('is_terminal'):
     if tree.get('name') in ctx.df.columns:
       result = Frame(ctx.current, ctx.pivots[ctx.current], tree['name'])
@@ -118,13 +118,13 @@ def assemble(ctx, tree):
     return result
 
   # If the tree isn't terminal, it has a child. Update the context appropriately
-  # and call assemble on the child. First, figure out the appropriate dataframe
+  # and call assembleColumn on the child. First, figure out the appropriate dataframe
   # for the current node.
 
   assert 'next' in tree, "Non-terminal notes must have a child"
   if tree.get('root'):
     oldCurrent = ctx.swapIn(tree['root'])
-    childResult = assemble(ctx, tree['next'])
+    childResult = assembleColumn(ctx, tree['next'])
     ctx.swapIn(oldCurrent)
 
     return childResult.getWithNamedRoot(tree['root'])
@@ -146,7 +146,7 @@ def assemble(ctx, tree):
 
   # Execute child with context of tableIn.
   ctx.swapIn(tableIn)
-  childResult = assemble(ctx, tree['next'])
+  childResult = assembleColumn(ctx, tree['next'])
   ctx.swapIn(tableOut)
 
   nestedChild = childResult.getAsNested(tableOut, keyOut)

@@ -1,2 +1,2 @@
 
-from .index import processShape
+from .index import assemble

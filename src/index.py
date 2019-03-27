@@ -7,7 +7,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 from .common.Context import Context
-from .assembler import assemble
+from .assembler import assembleColumn
 from .parser import parseLineToCommand
 
 def genMonthCount(start, end):
@@ -50,7 +50,7 @@ def genUniqueProduct(colUniqueVals, dataframes):
   return df
 
 
-def genOutputMatrix(dataframes, shape):
+def init_output_frame(dataframes, shape):
   cols = ['CMONTH(date)', 'shop', 'item']
 
   config = shape['config']
@@ -87,17 +87,17 @@ def genOutputMatrix(dataframes, shape):
   builtins.colUniqueVals = colUniqueVals
   colUniqueVals['CMONTH(date)'] = list(genMonthCount(start, end))
 
-  matrix = genUniqueProduct(colUniqueVals, dataframes)
+  Output = genUniqueProduct(colUniqueVals, dataframes)
 
-  matrix.sort_values(['CMONTH(date)','location','product'], inplace=True)
+  # Output.sort_values(['CMONTH(date)','location','product'], inplace=True)
 
   # Aggregate train set by shop/item pairs to calculate target
   # aggreagates, then <b>clip(0,20)</b> target value. This way train
   # target will be similar to the test predictions.
 
-  # felipap: add item_ctn_month column to 'matrix'
-  # matrix = pd.merge(matrix, group, on=cols, how='left')
-  # matrix['item_cnt_month'] = (matrix['item_cnt_month']
+  # felipap: add item_ctn_month column to 'Output'
+  # Output = pd.merge(Output, group, on=cols, how='left')
+  # Output['item_cnt_month'] = (Output['item_cnt_month']
   #                                 .fillna(0)
   #                                 .clip(0,20) # NB clip target here
   #                                 .astype(np.float16))
@@ -107,23 +107,38 @@ def genOutputMatrix(dataframes, shape):
   # It would be int16, after concatination with NaN values it becomes
   # int64, but foat16 becomes float16 even with NaNs.
 
-  return matrix
+  return Output
 
-def processShape(shape, dataframes):
-  dataframes['Matrix'] = genOutputMatrix(dataframes, shape)
+def assembleColumnAndAdd(ctx, tree, current):
+  result = assembleColumn(ctx, tree)
 
-  builtins.context = Context(dataframes, 'Matrix', 'CMONTH(date)')
+  if result.colName not in ctx.globals[current].columns:
+    ctx.globals[current] = pd.merge(ctx.globals[current], \
+      result.getStripped(), \
+      on=list(result.pivots), \
+      how='left', \
+      suffixes=(False, False))
+
+  return result
+
+def assemble(shape, dataframes):
+  dataframes['Output'] = init_output_frame(dataframes, shape)
+
+  context = Context(dataframes, 'Output', 'CMONTH(date)')
+
+  # Expose to notebook console
+  builtins.context = context
 
   context.rels = set(
     (*val.split('.'),*key.split('.'))
     for (val, key) in shape['pointers'].items()
   )
   context.pivots = shape['pivots']
-  context.pivots['Matrix'] = {'CMONTH(date)','location','product'}
+  context.pivots['Output'] = {'CMONTH(date)', 'shop', 'item'}
 
-  cmd = parseLineToCommand("Matrix.GET(%s)" % shape['config']['output_col'])
-  # context.globals['Matrix'][shape['config']['output_col']] ==
-  assemble(context, cmd['column'])
+  cmd = parseLineToCommand("Output.GET(%s)" % shape['config']['output_col'])
+  # context.globals['Output'][shape['config']['output_col']] ==
+  assembleColumnAndAdd(context, cmd['column'], 'Output')
   context.df[shape['config']['output_col']] = context.df[shape['config']['output_col']].fillna(0)
 
   builtins.df = context.df
@@ -133,6 +148,6 @@ def processShape(shape, dataframes):
     cmd = parseLineToCommand(feature)
     # TODO validate tree
     # pprint.pprint(cmd)
-    assemble(context, cmd['column'])
+    assembleColumnAndAdd(context, cmd['column'], 'Output')
   display(context.df)
       # break

@@ -50,10 +50,10 @@ class Frame(object):
   # REVIEW perhaps rename?
   def getWithNamedRoot(self, rootName):
     """
-    In something like `Matrix.MEAN(Sales.price|..)`, the result of evaluating
+    In something like `Output.MEAN(Sales.price|..)`, the result of evaluating
     price is a Frame in which everything (eg. pivots, tableName, colName etc) is
     named with respect to Sales. However, the result of evaluating Sales.price
-    should be with respect to Matrix. This function exists to make this
+    should be with respect to Output. This function exists to make this
     translation.
     """
 
