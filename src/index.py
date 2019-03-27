@@ -138,7 +138,7 @@ def assemble(shape, dataframes):
 
   cmd = parseLineToCommand("Output.GET(%s)" % shape['config']['output_col'])
   # context.globals['Output'][shape['config']['output_col']] ==
-  assembleColumnAndAdd(context, cmd['column'], 'Output')
+  assembleColumnAndAdd(context, cmd['column'], 'Output') # !!NOTE
   context.df[shape['config']['output_col']] = context.df[shape['config']['output_col']].fillna(0)
 
   builtins.df = context.df
@@ -148,6 +148,6 @@ def assemble(shape, dataframes):
     cmd = parseLineToCommand(feature)
     # TODO validate tree
     # pprint.pprint(cmd)
-    assembleColumnAndAdd(context, cmd['column'], 'Output')
+    assembleColumnAndAdd(context, cmd['column'], 'Output') # !!NOTE
   display(context.df)
       # break

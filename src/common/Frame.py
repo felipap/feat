@@ -5,16 +5,20 @@ class Frame(object):
   (pivots, colName)
   """
 
-  def __init__(self, tableName, pivots, colName):
+  def __init__(self, colName, ctx, frameName, pivots=None):
     assert type(colName) == str
     assert type(pivots) != str # This mistake happens a lot.
-    self.tableName = tableName
+    self.frameName = frameName
+
+    if pivots is None:
+      pivots = ctx.pivots[frameName]
+
     self.pivots = set(pivots)
     self.colName = colName
     self.df = None
 
   def __repr__(self):
-    return 'Frame(%s.%s|%s)' % (self.tableName, self.colName, self.pivots)
+    return 'Frame(%s.%s|%s)' % (self.frameName, self.colName, self.pivots)
 
   # def mergeChild(self, childResult):
   #   if self.df is not None:
@@ -51,7 +55,7 @@ class Frame(object):
   def getWithNamedRoot(self, rootName):
     """
     In something like `Output.MEAN(Sales.price|..)`, the result of evaluating
-    price is a Frame in which everything (eg. pivots, tableName, colName etc) is
+    price is a Frame in which everything (eg. pivots, frameName, colName etc) is
     named with respect to Sales. However, the result of evaluating Sales.price
     should be with respect to Output. This function exists to make this
     translation.
@@ -60,7 +64,7 @@ class Frame(object):
     # FIXME: this should be a copy
 
     # TODO: this also necessary?
-    # self.tableName = rootName
+    # self.frameName = rootName
 
     assert self.df is not None
 
@@ -78,27 +82,27 @@ class Frame(object):
     return self
 
   # REVIEW perhaps rename?
-  def getAsNested(self, tableOut, keyOut):
+  def getAsNested(self, ctx, frameOutName, keyOut):
     """
     In something like `Sales.item.category`, category belongs to the Items
     table. The result of evaluating the category field is a Frame in which
-    everything (eg. pivots, tableName, colName etc) is named with respect to
+    everything (eg. pivots, frameName, colName etc) is named with respect to
     Items. However, the result of evaluating item.category should be a
     Frame with respect to Sales. This function exists to make
     this translation.
     """
 
-    def nestName(name):
+    def nestedName(name):
       return '%s.%s' % (keyOut, name)
 
     # FIXME WARNING keyIn should be passed as an argument!
     keyIn = 'id'
-    nested = Frame(tableOut, [nestName(keyIn)], nestName(self.colName))
+    nested = Frame(nestedName(self.colName), ctx, frameOutName, [nestedName(keyIn)])
 
-    # Merge into tableOut the generated column from tableIn.
+    # Merge into frameOutName the generated column from tableIn.
     col = self.getStripped().copy()
     col.rename(
-      columns=dict((c, nestName(c)) for c in col.columns),
+      columns=dict((c, nestedName(c)) for c in col.columns),
       inplace=True
     )
 

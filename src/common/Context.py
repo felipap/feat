@@ -1,3 +1,4 @@
+from .Frame import Frame
 
 class Context(object):
   def __init__(self, globals, current, timeCol):
@@ -35,3 +36,6 @@ class Context(object):
       elif rel[2] == table and rel[3] == field:
         return (rel[2], rel[3], rel[0], rel[1])
     return None
+
+  def createFrameFromCurrent(self):
+    return

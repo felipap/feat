@@ -71,7 +71,10 @@ def execFunction(context, tree):
 def assembleColumn(ctx, tree):
   if tree.get('is_terminal'):
     if tree.get('name') in ctx.df.columns:
-      result = Frame(ctx.current, ctx.pivots[ctx.current], tree['name'])
+      result = Frame(tree['name'], ctx, ctx.current)
+      result.fillData(ctx.df)
+
+      result = Frame(tree['name'], ctx, ctx.current)
       result.fillData(ctx.df)
       return result
 
@@ -104,7 +107,7 @@ def assembleColumn(ctx, tree):
       assert tree['this'] in ctx.df.columns, "Terminal node isn't a " \
       "function, so expected a string that belongs to the dataframe."
 
-      result = Frame(ctx.current, ctx.pivots[ctx.current], tree['this'])
+      result = Frame(tree['this'], ctx, ctx.current)
       result.fillData(ctx.df)
       return result
 
@@ -113,7 +116,7 @@ def assembleColumn(ctx, tree):
   if tree['name'] in ctx.df.columns:
     # if 'this' not in tree:
     #   print(tree)
-    result = Frame(ctx.current, ctx.pivots[ctx.current], tree['name'])
+    result = Frame(tree['name'], ctx, ctx.current)
     result.fillData(ctx.df)
     return result
 
@@ -149,7 +152,7 @@ def assembleColumn(ctx, tree):
   childResult = assembleColumn(ctx, tree['next'])
   ctx.swapIn(tableOut)
 
-  nestedChild = childResult.getAsNested(tableOut, keyOut)
+  nestedChild = childResult.getAsNested(ctx, tableOut, keyOut)
 
   if nestedChild.colName in ctx.df.columns:
     # Not expected, as the condition of it already being in columns should've
@@ -172,6 +175,6 @@ def assembleColumn(ctx, tree):
   # below, Pandas will throw an error.
   ctx.df = ctx.df.drop(rightOn, axis=1)
 
-  result = Frame(ctx.current, ctx.pivots[ctx.current], tree['name'])
+  result = Frame(tree['name'], ctx, ctx.current)
   result.fillData(ctx.df)
   return result

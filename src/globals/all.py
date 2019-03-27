@@ -30,7 +30,7 @@ class Forward(object):
     if pivot is None:
       pivot = childResult.pivots
 
-    result = Frame(ctx.current, pivot, name)
+    result = Frame(ctx, ctx.current, pivot, name)
 
     shifted = childResult.getStripped()
 
@@ -65,7 +65,7 @@ class Get(object):
       childResult.pivots = pivot
       # pivot = childResult.pivots
 
-    # result = Frame(ctx.current, pivot, name)
+    # result = Frame(ctx, ctx.current, pivot, name)
     #
     # shifted = childResult.getStripped()
     #
@@ -98,7 +98,7 @@ class MeanDiff(object):
     # if pivot is None:
     #   pivot = childResult.pivots
     #
-    # result = Frame(ctx.current, pivot, name)
+    # result = Frame(ctx, ctx.current, pivot, name)
     #
     # shifted = childResult.getStripped()
     #
@@ -141,7 +141,7 @@ class MeanDiff(object):
     # display(grouped)
     display('mean', grouped)
 
-    result = Frame(ctx.current, groupby, name)
+    result = Frame(ctx, ctx.current, groupby, name)
     result.fillData(grouped)
 
     # agg.columns = [name]
@@ -164,7 +164,7 @@ class Mean(object):
     child = tree['args'][0]
     childName = child['name']
 
-    result = Frame(ctx.current, keyCols, name)
+    result = Frame(name, ctx, ctx.current, keyCols)
 
     childResult = genColumn(child)
 
@@ -190,7 +190,7 @@ class CMonth(object):
 
     childResult = genColumn(child)
 
-    result = Frame(ctx.current, childResult.getPivots(), name)
+    result = Frame(name, ctx, ctx.current, childResult.getPivots())
 
     assert 'date' in childResult.getStripped().columns
 
@@ -219,7 +219,7 @@ class Sum(object):
     child = tree['args'][0]
     childName = child['name']
 
-    result = Frame(ctx.current, keyCols, name)
+    result = Frame(name, ctx, ctx.current, keyCols)
 
     childResult = genColumn(child)
 
