@@ -1,133 +1,107 @@
 # TODO: rename context to namespace????
 
-from functools import wraps
 import types
 import time
+from functools import wraps
 
 import numpy as np
 import pandas as pd
 
-from ..common import Context, Frame
-from ..globals import globals as globalFunctions
+from ..common import Context, Frame, assert_returns_frame
+from ..globals import getFunction
 
-TIME_COL = 'month_block'
-
-def logErrors(function):
-  @wraps(function)
-  def foo(ctx, tree):
+def assemble_column_log_errors(inner):
+  @wraps(inner)
+  def outer(ctx, tree):
     try:
-      result = function(ctx, tree)
+      result = inner(ctx, tree)
     except Exception as e:
       print("Error with", ctx.current, tree['name'])
       raise e
-
-    # assert result.__class__.__name__ == 'Frame', result.__class__.__name__
-    # assert isinstance(result, Frame) # Won't work with jupyter autoreload.
-
-    # assert isinstance(result, Frame), "%s isn't Frame" % result
-    return result
-  return foo
-
-def assertReturnsFrame(function):
-  @wraps(function)
-  def foo(*args, **kwargs):
-    result = function(*args, **kwargs)
-
     assert result.__class__.__name__ == 'Frame', result.__class__.__name__
     # assert isinstance(result, Frame) # Won't work with jupyter autoreload.
-
     # assert isinstance(result, Frame), "%s isn't Frame" % result
     return result
-  return foo
+  return outer
 
-# @assertReturnsFrame
-def execFunction(context, tree):
+@assert_returns_frame
+def assemble_function(context, tree):
   keyword = tree['function']
-  if tree['function'] not in globalFunctions:
-    raise Exception('Unregistered function %s' % tree['function'])
 
-  groupby = None
-  if tree.get('groupby'):
-    for g in tree['groupby']:
-      assembleColumn(context, g)
+  fn = getFunction(keyword)
+  if not fn:
+    raise Exception('Unregistered function %s' % keyword)
 
-    groupby = [f['name'] for f in tree['groupby']]
+  def assemble_groupby(context, tree):
+    groupby = None
+    if tree.get('groupby'):
+      for g in tree['groupby']:
+        assemble_column(context, g)
+      groupby = [f['name'] for f in tree['groupby']]
+    return groupby
 
-  def generateClosure(childTree):
-    # We pass a 'closured' function to make sure globalFunctions won't try to do
-    # something funny.
-    return assembleColumn(context, childTree)
+  def assemble_args(context, tree):
+    ll = []
+    for arg in tree.get('args'):
+      if isinstance(arg, dict):
+        ll.append(assemble_column(context, arg))
+      else:
+        ll.append(arg)
+    return ll
 
-  result = globalFunctions[tree['function']](context, tree, generateClosure, groupby)
+  groupby = assemble_groupby(context, tree)
+  args = assemble_args(context, tree)
 
-  # assert result.__class__.__name__ == 'Frame', result.__class__.__name__
-  # assert isinstance(result, Frame) # Won't work with jupyter autoreload.
+  if fn['num_args'] != -1:
+    assert len(args) == fn['num_args']
+  if fn.get('takes_pivots', False):
+    assert not groupby is None
+  else:
+    assert groupby is None
+
+  if fn.get('takes_pivots', False):
+    result = fn['call'](context, tree['name'], args, groupby)
+  else:
+    result = fn['call'](context, tree['name'], args)
 
   return result
 
 
-@logErrors
-@assertReturnsFrame
-def assembleColumn(ctx, tree):
+@assemble_column_log_errors
+@assert_returns_frame
+def assemble_column(ctx, tree):
+  # If column was already generated, stop.
+  # NOTE Something won't work here because of the A.b.c vs. B.c!!!!!
+  if ctx.currHasColumn(tree.get('name')):
+    result = ctx.create_subframe(tree['name'])
+    result.fillData(ctx.df)
+    return result
+
   if tree.get('is_terminal'):
-    if tree.get('name') in ctx.df.columns:
-      result = Frame(tree['name'], ctx, ctx.current)
-      result.fillData(ctx.df)
-
-      result = Frame(tree['name'], ctx, ctx.current)
-      result.fillData(ctx.df)
-      return result
-
     if tree.get('function'):
-      result = execFunction(ctx, tree)
-
-      # display("now is", result.getStripped())
-      # import builtins
-      # builtins.fuck = result.getStripped()
-      # display(ctx.df)
-
-      # FIXME Even if df of child is different (eg. Items.MEAN(Sales.item)), we are
-      # merging based on the child's columns, without any warning or thinking about it
-      # deeper
-
-      if not set(result.pivots).issubset(ctx.df.columns):
-        raise Exception('Result can\'t be merged into current dataset: ', \
-          result.pivots, ctx.df.columns)
-
-      if result.colName not in ctx.df.columns:
-        ctx.df = pd.merge(ctx.df, \
-          result.getStripped(), \
-          on=list(result.pivots), \
-          how='left', \
-          suffixes=(False, False))
-
+      result = assemble_function(ctx, tree)
+      ctx.currMergeFrame(result)
       return result
+
     else:
       print(tree['this'], ctx.current)
       assert tree['this'] in ctx.df.columns, "Terminal node isn't a " \
       "function, so expected a string that belongs to the dataframe."
 
-      result = Frame(tree['this'], ctx, ctx.current)
+      result = ctx.create_subframe(tree['this'])
       result.fillData(ctx.df)
       return result
 
-  # If column was already generated, stop.
-  # NOTE Something won't work here because of the A.b.c vs. B.c!!!!!
-  if tree['name'] in ctx.df.columns:
-    # if 'this' not in tree:
-    #   print(tree)
-    result = Frame(tree['name'], ctx, ctx.current)
-    result.fillData(ctx.df)
-    return result
-
   # If the tree isn't terminal, it has a child. Update the context appropriately
-  # and call assembleColumn on the child. First, figure out the appropriate dataframe
-  # for the current node.
+  # and call assemble_column on the child. First, figure out the appropriate
+  # dataframe for the current node.
 
   assert 'next' in tree, "Non-terminal notes must have a child"
+
   if tree.get('root'):
     oldCurrent = ctx.swapIn(tree['root'])
-    childResult = assembleColumn(ctx, tree['next'])
+
+    childResult = assemble_column(ctx, tree['next'])
     ctx.swapIn(oldCurrent)
 
     return childResult.getWithNamedRoot(tree['root'])
@@ -149,12 +123,12 @@ def assembleColumn(ctx, tree):
 
   # Execute child with context of tableIn.
   ctx.swapIn(tableIn)
-  childResult = assembleColumn(ctx, tree['next'])
+  childResult = assemble_column(ctx, tree['next'])
   ctx.swapIn(tableOut)
 
   nestedChild = childResult.getAsNested(ctx, tableOut, keyOut)
 
-  if nestedChild.colName in ctx.df.columns:
+  if nestedChild.name in ctx.df.columns:
     # Not expected, as the condition of it already being in columns should've
     # triggered the `tree['name'] in ctx.df.columns` check above.
     raise Exception()
@@ -162,7 +136,7 @@ def assembleColumn(ctx, tree):
   rightOn = '%s.%s' % (keyOut, keyIn)
 
   ctx.df = pd.merge(ctx.df, \
-    nestedChild.getStripped(), \
+    nestedChild.get_stripped(), \
     left_on=keyOut, \
     right_on=rightOn, \
     how='left', \
@@ -175,6 +149,6 @@ def assembleColumn(ctx, tree):
   # below, Pandas will throw an error.
   ctx.df = ctx.df.drop(rightOn, axis=1)
 
-  result = Frame(tree['name'], ctx, ctx.current)
+  result = ctx.create_subframe(tree['name'])
   result.fillData(ctx.df)
   return result

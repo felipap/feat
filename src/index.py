@@ -1,5 +1,4 @@
 
-import builtins
 import pandas as pd
 import numpy as np
 
@@ -7,7 +6,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 from .common.Context import Context
-from .assembler import assembleColumn
+from .assembler import assemble_column
 from .parser import parseLineToCommand
 
 def genMonthCount(start, end):
@@ -24,8 +23,8 @@ def genUniqueProduct(colUniqueVals, dataframes):
     many *= len(values)
 
   # TODO improve check
-  print("many is", many)
-  assert many < 50*1000*1000
+  print("Generating output of size", many)
+  assert many < 50*1000*1000, "Table too big"
 
   # TODO one of the Kaggle solutions is smarter than just doing a complete product
   # for date in genMonthCount(start, end):
@@ -50,17 +49,11 @@ def genUniqueProduct(colUniqueVals, dataframes):
   return df
 
 
-def init_output_frame(dataframes, shape):
-  cols = ['CMONTH(date)', 'shop', 'item']
-
-  config = shape['config']
+def init_output_frame(dataframes, output_config):
+  # assert '__DATE__' in output_config['pointers']
 
   colUniqueVals = {}
-  assert '__DATE__' in shape['config']['output_pivots']
-
-  print(shape['config']['output_pivots'])
-
-  for column, tableField in shape['config']['output_pivots'].items():
+  for column, tableField in output_config['pointers'].items():
     if column == '__DATE__':
       continue
 
@@ -70,8 +63,8 @@ def init_output_frame(dataframes, shape):
     assert tableIn in shape['pivots']
     assert keyIn in shape['pivots'][tableIn]
 
-    if 'restrict_ids_to' in config and column in config['restrict_ids_to']:
-      t, f = config['restrict_ids_to'][column].split('.') # eg: Sales.location
+    if 'restrict_ids_to' in output_config and column in output_config['restrict_ids_to']:
+      t, f = output_config['restrict_ids_to'][column].split('.') # eg: Sales.location
       # possible = set(df[keyIn].unique()) & set(dataframes[t][f].unique())
       colUniqueVals[column.lower()] = list(set(dataframes[t][f].unique()))
     else:
@@ -81,10 +74,9 @@ def init_output_frame(dataframes, shape):
 
   print("colUniqueVals", colUniqueVals.keys())
 
-  start = datetime.strptime(config['date_start'], '%Y-%m')
-  end = datetime.strptime(config['date_end'], '%Y-%m')
+  start = datetime.strptime(output_config['date_start'], '%Y-%m')
+  end = datetime.strptime(output_config['date_end'], '%Y-%m')
 
-  builtins.colUniqueVals = colUniqueVals
   colUniqueVals['CMONTH(date)'] = list(genMonthCount(start, end))
 
   Output = genUniqueProduct(colUniqueVals, dataframes)
@@ -110,11 +102,11 @@ def init_output_frame(dataframes, shape):
   return Output
 
 def assembleColumnAndAdd(ctx, tree, current):
-  result = assembleColumn(ctx, tree)
+  result = assemble_column(ctx, tree)
 
-  if result.colName not in ctx.globals[current].columns:
+  if result.name not in ctx.globals[current].columns:
     ctx.globals[current] = pd.merge(ctx.globals[current], \
-      result.getStripped(), \
+      result.get_stripped(), \
       on=list(result.pivots), \
       how='left', \
       suffixes=(False, False))
@@ -122,32 +114,29 @@ def assembleColumnAndAdd(ctx, tree, current):
   return result
 
 def assemble(shape, dataframes):
-  dataframes['Output'] = init_output_frame(dataframes, shape)
+  dataframes['Output'] = init_output_frame(dataframes, shape['output'])
 
   context = Context(dataframes, 'Output', 'CMONTH(date)')
 
-  # Expose to notebook console
-  builtins.context = context
-
-  context.rels = set(
+  # Set pointers for each table
+  context.pointers = set(
     (*val.split('.'),*key.split('.'))
     for (val, key) in shape['pointers'].items()
   )
+  for val, key in shape['output']['pointers'].items():
+    context.pointers.add((*val.split('.'),*key.split('.')))
+
+  # Set pivots for each table
   context.pivots = shape['pivots']
-  context.pivots['Output'] = {'CMONTH(date)', 'shop', 'item'}
-
-  cmd = parseLineToCommand("Output.GET(%s)" % shape['config']['output_col'])
-  # context.globals['Output'][shape['config']['output_col']] ==
-  assembleColumnAndAdd(context, cmd['column'], 'Output') # !!NOTE
-  context.df[shape['config']['output_col']] = context.df[shape['config']['output_col']].fillna(0)
-
-  builtins.df = context.df
+  context.pivots['Output'] = set(shape['output']['pivots'])
 
   for index, feature in enumerate(shape['features']):
-    print('Processing {}/{}: {}'.format(index+1, len(shape['features']), feature))
-    cmd = parseLineToCommand(feature)
-    # TODO validate tree
-    # pprint.pprint(cmd)
-    assembleColumnAndAdd(context, cmd['column'], 'Output') # !!NOTE
-  display(context.df)
-      # break
+    print('\nProcessing {}/{}: {}'.format(index+1, len(shape['features']), feature))
+    cmd = parseLineToCommand(feature) # REVIEW no need to validate tree?
+    assembleColumnAndAdd(context, cmd['column'], 'Output')
+
+  # Expose to notebook console
+  import builtins
+  builtins.context = context
+
+  return context.df[list(context.pivots['Output']) + shape['features']]

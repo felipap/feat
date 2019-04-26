@@ -14,11 +14,11 @@ class Frame(object):
       pivots = ctx.pivots[frameName]
 
     self.pivots = set(pivots)
-    self.colName = colName
+    self.name = colName
     self.df = None
 
   def __repr__(self):
-    return 'Frame(%s.%s|%s)' % (self.frameName, self.colName, self.pivots)
+    return 'Frame(%s.%s|%s)' % (self.frameName, self.name, self.pivots)
 
   # def mergeChild(self, childResult):
   #   if self.df is not None:
@@ -27,7 +27,7 @@ class Frame(object):
   #
   #   assert type(df) == pd.DataFrame
   #   assert set(self.pivots).issubset(df.pivots)
-  #   assert self.colName in df.columns
+  #   assert self.name in df.columns
 
   def getPivots(self):
     return self.pivots
@@ -38,17 +38,21 @@ class Frame(object):
 
     assert type(df) == pd.DataFrame
     # NOTE: In the future, it might make sense to soften this restriction, for
-    # instance, to allow {'month_block', 'item'} !<
-    # {'month_block', 'item.category'}.
-    assert set(self.pivots).issubset(df.columns), \
-      "%s !< %s" % (self.pivots, df.columns)
-    assert self.colName in df.columns
+    # instance, to allow {'month_block', 'item'} !< {'month_block', 'item.category'}.
+    ourPivots = self.pivots # [*self.pivots,self.name]
+
+    for col in self.pivots:
+      assert col in df.columns, 'Pivot col %s not found in %s' % (col, df.columns)
+
+    assert self.name in df.columns, '%s not in %s' % (self.name, df.columns)
     self.df = df
 
-  def getStripped(self):
+  def get_stripped(self):
     if self.df is None:
       raise Exception()
-    wantedCols = list(set([self.colName]) | set(self.pivots))
+    wantedCols = list(set([self.name]) | set(self.pivots))
+    # print("frame is %s" % self.name)
+    # print("> trying to get %s from %s" % (wantedCols, self.df.columns))
     return self.df[wantedCols]
 
   # REVIEW perhaps rename?
@@ -68,10 +72,10 @@ class Frame(object):
 
     assert self.df is not None
 
-    col = self.getStripped().copy()
+    col = self.get_stripped().copy()
 
-    columns = { self.colName: "%s.%s" % (rootName, self.colName), }
-    self.colName = "%s.%s" % (rootName, self.colName)
+    columns = { self.name: "%s.%s" % (rootName, self.name), }
+    self.name = "%s.%s" % (rootName, self.name)
     col.rename(
       columns=columns,
       inplace=True
@@ -97,10 +101,10 @@ class Frame(object):
 
     # FIXME WARNING keyIn should be passed as an argument!
     keyIn = 'id'
-    nested = Frame(nestedName(self.colName), ctx, frameOutName, [nestedName(keyIn)])
+    nested = Frame(nestedName(self.name), ctx, frameOutName, [nestedName(keyIn)])
 
     # Merge into frameOutName the generated column from tableIn.
-    col = self.getStripped().copy()
+    col = self.get_stripped().copy()
     col.rename(
       columns=dict((c, nestedName(c)) for c in col.columns),
       inplace=True

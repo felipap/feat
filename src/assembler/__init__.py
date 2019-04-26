@@ -1,2 +1,2 @@
 
-from .assembler import assembleColumn
+from .assembler import assemble_column
