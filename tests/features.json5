@@ -30,36 +30,40 @@
   "output_col": "Sales.SUM(item_cnt_day|CMONTH(date),shop,item)",
 
   "features": [
+    "shop.city_code",
+    "item.category",
+    "item.category.type_code",
+    "item.category.subtype_code",
+
     "Sales.SUM(item_cnt_day|CMONTH(date),shop,item)", // to predict
-    // "Sales.SUM(item_cnt_day|CMONTH(date))",
-    // "Sales.MEAN(item_cnt_day|CMONTH(date),shop)",
-    // "FWD(Sales.SUM(item_cnt_day|CMONTH(date)),1|CMONTH(date),shop,item)",
-    // "FWD(Sales.SUM(item_cnt_day|CMONTH(date)),2|CMONTH(date),shop,item)",
-    // "FWD(Sales.SUM(item_cnt_day|CMONTH(date)),3|CMONTH(date),shop,item)",
-    // "FWD(Sales.SUM(item_cnt_day|CMONTH(date)),6|CMONTH(date),shop,item)",
-    // "FWD(Sales.SUM(item_cnt_day|CMONTH(date)),12|CMONTH(date),shop,item)",
-    // "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date)),1|CMONTH(date))",
-    // "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),item),1)",
-    // "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),item),2)",
-    // "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),item),3)",
-    // "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),item),6)",
-    // "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),item),12)",
-    // "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),shop),1)",
-    // "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),shop),2)",
-    // "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),shop),3)",
-    // "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),shop),6)",
-    // "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),shop),12)",
-    // "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),item.category),1|CMONTH(date),item.category)",
-    // "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),shop,item.category),1)",
-    // "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),shop,item.category.type_code),1)",
-    // "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),shop,item.category.subtype_code),1)",
-    // "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),shop.city_code),1)",
-    // "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),item,shop.city_code),1)",
-    // "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),item.category.type_code),1)",
-    // "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date))|CMONTH(date),item.category.subtype_code),1)",
-    // "FWD(Sales.MEAN_DIFF(MEAN(item_cnt_day|item,CMONTH(date))),1)",
-    // "FWD(Sales.MEAN_DIFF(SUM(revenue|shop,CMONTH(date))),1)",
-    "Sales.MEAN(item_cnt_day|item,CMONTH(date))",
-    "Sales.SUM(revenue|shop,CMONTH(date))",
+
+    "FWD(Sales.SUM(item_cnt_day|CMONTH(date),shop,item),1,CMONTH(date)|CMONTH(date),shop,item)", // LAG SHOULD BE 1,2,3,6,12
+
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date),shop,item)|CMONTH(date)),1,CMONTH(date))",
+
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date),shop,item)|CMONTH(date),item),1,CMONTH(date))", // LAG SHOULD BE 1,2,3,6,12
+
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date),shop,item)|CMONTH(date),shop),1,CMONTH(date))", // LAG SHOULD BE 1,2,3,6,12
+
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date),shop,item)|CMONTH(date),item.category),1,CMONTH(date))",
+
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date),shop,item)|CMONTH(date),shop,item.category),1,CMONTH(date))",
+
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date),shop,item)|CMONTH(date),shop,item.category.type_code),1,CMONTH(date))",
+
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date),shop,item)|CMONTH(date),shop,item.category.subtype_code),1,CMONTH(date))",
+
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date),shop,item)|CMONTH(date),shop.city_code),1,CMONTH(date))",
+
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date),shop,item)|CMONTH(date),item,shop.city_code),1,CMONTH(date))",
+
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date),shop,item)|CMONTH(date),item.category.type_code),1,CMONTH(date))",
+
+    "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date),shop,item)|CMONTH(date),item.category.subtype_code),1,CMONTH(date))",
+
+    "FWD(Sales.MEAN_DIFF(MEAN(item_cnt_day|item,CMONTH(date))),1,CMONTH(date))",
+    // "FWD(Sales.MEAN_DIFF(SUM(revenue|shop,CMONTH(date))),1,CMONTH(date)))",
+    // "Sales.MEAN(item_cnt_day|item,CMONTH(date))",
+    // "Sales.SUM(revenue|shop,CMONTH(date))",
   ]
 }

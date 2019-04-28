@@ -1,11 +1,11 @@
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 import pandas as pd
 import numpy as np
 
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
-
 from .common.Context import Context
+from .common.Graph import Graph
 from .assembler import assemble_column
 from .parser import parseLineToCommand
 
@@ -16,7 +16,7 @@ def genMonthCount(start, end):
     curr += relativedelta(months=1)
 
 
-def genUniqueProduct(colUniqueVals, dataframes):
+def gen_unique_product(colUniqueVals, dataframes):
   many = 1
   for values in colUniqueVals.values():
     assert type(values) == list
@@ -44,19 +44,23 @@ def genUniqueProduct(colUniqueVals, dataframes):
     # Convert all but datetime cols??
     if df[column].dtype == np.dtype('datetime64[ns]'):
       continue
-    df[column] = df[column].astype(np.int64)
+    # df[column] = df[column].astype(str) # .astype(np.int64)
 
   return df
 
 
-def init_output_frame(dataframes, output_config):
-  # assert '__DATE__' in output_config['pointers']
+def init_output_frame(dataframes, output_config, shape):
 
   colUniqueVals = {}
-  for column, tableField in output_config['pointers'].items():
-    if column == '__DATE__':
+  # QUESTION should we look over pointers or over pivots?
+  # for column, tableField in output_config['pointers'].items():
+  #   tableIn, keyIn = tableField.split('.')
+
+  for column in output_config['pivots']:
+    if column.startswith('CMONTH'):
       continue
 
+    tableField = output_config['pointers'][column]
     tableIn, keyIn = tableField.split('.')
 
     df = dataframes[tableIn]
@@ -69,19 +73,18 @@ def init_output_frame(dataframes, output_config):
       colUniqueVals[column.lower()] = list(set(dataframes[t][f].unique()))
     else:
       colUniqueVals[column.lower()] = list(df[keyIn].unique())
-
-  # colUniqueVals['product'] = df[keyIn].unique()
-
-  print("colUniqueVals", colUniqueVals.keys())
+    print("x %s (%s items)" % (column.lower(), len(colUniqueVals[column.lower()])))
 
   start = datetime.strptime(output_config['date_start'], '%Y-%m')
   end = datetime.strptime(output_config['date_end'], '%Y-%m')
 
-  colUniqueVals['CMONTH(date)'] = list(genMonthCount(start, end))
+  dates = list(genMonthCount(start, end))
+  colUniqueVals[shape['output']['date_block']] = dates
+  print("x %s (%s items)" % (shape['output']['date_block'], len(dates)))
 
-  Output = genUniqueProduct(colUniqueVals, dataframes)
+  Output = gen_unique_product(colUniqueVals, dataframes)
 
-  # Output.sort_values(['CMONTH(date)','location','product'], inplace=True)
+  # Output.sort_values([shape['output']['date_block'],'location','product'], inplace=True)
 
   # Aggregate train set by shop/item pairs to calculate target
   # aggreagates, then <b>clip(0,20)</b> target value. This way train
@@ -101,42 +104,45 @@ def init_output_frame(dataframes, output_config):
 
   return Output
 
-def assembleColumnAndAdd(ctx, tree, current):
-  result = assemble_column(ctx, tree)
-
-  if result.name not in ctx.globals[current].columns:
-    ctx.globals[current] = pd.merge(ctx.globals[current], \
-      result.get_stripped(), \
-      on=list(result.pivots), \
-      how='left', \
-      suffixes=(False, False))
-
-  return result
-
 def assemble(shape, dataframes):
-  dataframes['Output'] = init_output_frame(dataframes, shape['output'])
+  dataframes['Output'] = init_output_frame(dataframes, shape['output'], shape)
 
-  context = Context(dataframes, 'Output', 'CMONTH(date)')
+  context = Context(dataframes, 'Output', shape['output']['date_block'])
 
-  # Set pointers for each table
-  context.pointers = set(
-    (*val.split('.'),*key.split('.'))
-    for (val, key) in shape['pointers'].items()
-  )
+  # Create graph of connections between tables.
+
+  context.graph = Graph()
+  for (val, key) in shape['pivots'].items():
+    context.graph.add_node(val, pivots=key)
+  context.graph.add_node('Output', pivots=shape['output']['pivots'])
+
+  for (val, key) in shape['pointers'].items():
+    tableOut, colOut, tableIn, colIn = (*val.split('.'),*key.split('.'))
+    context.graph.add_edge(tableOut, colOut, tableIn, colIn)
+
   for val, key in shape['output']['pointers'].items():
-    context.pointers.add((*val.split('.'),*key.split('.')))
+    colOut, tableIn, colIn = (val,*key.split('.'))
+    context.graph.add_edge('Output', colOut, tableIn, colIn)
 
-  # Set pivots for each table
-  context.pivots = shape['pivots']
-  context.pivots['Output'] = set(shape['output']['pivots'])
+  print("Context graph is", context.graph)
+
+  ######
 
   for index, feature in enumerate(shape['features']):
     print('\nProcessing {}/{}: {}'.format(index+1, len(shape['features']), feature))
-    cmd = parseLineToCommand(feature) # REVIEW no need to validate tree?
-    assembleColumnAndAdd(context, cmd['column'], 'Output')
+    # REVIEW no need to validate tree?
+    cmd = parseLineToCommand(feature)
+
+    result = assemble_column(context, cmd['column'])
+
+    # Calling assemble_column with context.current set to 'Output' should take
+    # care of merging the assembled columns with the Output dataframe.
+    if result.name not in context.globals['Output'].columns:
+      raise Exception('Something went wrong')
 
   # Expose to notebook console
   import builtins
   builtins.context = context
 
-  return context.df[list(context.pivots['Output']) + shape['features']]
+  return context.df
+  # return context.df[list(shape['output']['pivots']) + shape['features']]

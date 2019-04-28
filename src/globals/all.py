@@ -23,11 +23,14 @@ def getFunction(name):
 
 def call_fwd(ctx, name, args, pivots):
   lag = args[1]
+  time_col = args[2].name
   child = args[0]
 
   to_shift = child.get_stripped()
   to_shift.rename(columns={ child.name: name }, inplace=True)
-  to_shift[ctx.timeCol] += lag
+
+  print("to_shift", child.get_stripped().columns)
+  to_shift[time_col] += lag
 
   # If pivots isn't supplied, use child's pivots instead.
   if pivots is None:
@@ -36,7 +39,7 @@ def call_fwd(ctx, name, args, pivots):
   result.fillData(to_shift)
   return result
 
-register_function('Forward', 'FWD', call_fwd, num_args=2, takes_pivots=True)
+register_function('Forward', 'FWD', call_fwd, num_args=3, takes_pivots=True)
 
 #
 
@@ -113,10 +116,14 @@ register_function('Mean', 'MEAN', call_mean, num_args=1, takes_pivots=True)
 def call_cmonth(ctx, name, args):
   child = args[0]
 
-  assert 'date' in child.get_stripped().columns
-  assert child.get_stripped().date.dtype == np.dtype('datetime64[ns]')
+  # print('date is', child.get_stripped().columns, name, child.name)
+
+  assert child.name.endswith('date') # in child.get_stripped().columns
+  assert child.get_stripped()[child.name].dtype == np.dtype('datetime64[ns]')
 
   def apply(row):
+    # print("child.name", child.name, row[child.name])
+    # return datetime.strptime(row[child.name], '%Y-%m-%dT%H:%M:%S.%f')
     parsed = row[child.name] # datetime.strptime(row['date'], '%Y-%m-%d')
     return int((parsed.year - 2000)*12+parsed.month)
   df = child.get_stripped().copy()
@@ -124,9 +131,27 @@ def call_cmonth(ctx, name, args):
 
   result = ctx.create_subframe(name, child.getPivots())
   result.fillData(df)
+  print("pivots is", child.getPivots(), child.get_stripped().columns, result.get_stripped().columns)
   return result
 
 register_function('CMonth', 'CMONTH', call_cmonth, num_args=1)
+
+#
+
+def call_nunique(ctx, name, args, pivots):
+  child = args[0]
+  # FIXME: childResult should be used to generate the thing below, not ctx.df
+  # and childName
+  agg = ctx.df.groupby(pivots).agg({ child.name: ['nunique'] })
+  agg.columns = [name]
+  agg.reset_index(inplace=True)
+  # display(agg)
+  agg[name] = agg[name].astype(np.int64) # REVIEW type cast
+  result = ctx.create_subframe(name, pivots)
+  result.fillData(agg)
+  return result
+
+register_function('Nunique', 'NUNIQUE', call_nunique, num_args=1, takes_pivots=True)
 
 #
 

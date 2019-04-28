@@ -66,15 +66,32 @@ class JSONifier(Transformer):
   @v_args(meta=True)
   @annotate_match
   def root_column(self, children, _):
-    assert len(children) == 1 or len(children) == 2
+    assert 1 <= len(children) <= 3
     # If : this_column
     if len(children) == 1:
       return children[0]
-    # If : TABLE_NAME "." this_column
     assert type(children[0]) == Token
+    # If : TABLE_NAME "." this_column
+    if len(children) == 2:
+      return {
+        "root": children[0].value,
+        "next": children[1],
+      }
+    # If : TABLE_NAME field_translation "." this_column
     return {
       "root": children[0].value,
-      "next": children[1]
+      "translation": children[1],
+      "next": children[2],
+    }
+
+  @v_args(meta=True)
+  @annotate_match
+  def field_translation(self, children, _):
+    assert len(children) % 2 == 0
+
+    return {
+      "map": list(zip(*(iter(children),) * 2)),
+      "map_str": list(zip(*(iter(c['name'] for c in children),) * 2)),
     }
 
   @v_args(meta=True)

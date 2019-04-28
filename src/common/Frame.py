@@ -1,33 +1,22 @@
 import pandas as pd
+import copy
 
 class Frame(object):
   """
   (pivots, colName)
   """
 
-  def __init__(self, colName, ctx, frameName, pivots=None):
+  def __init__(self, colName, ctx, tableName, pivots):
     assert type(colName) == str
     assert type(pivots) != str # This mistake happens a lot.
-    self.frameName = frameName
-
-    if pivots is None:
-      pivots = ctx.pivots[frameName]
+    self.tableName = tableName
 
     self.pivots = set(pivots)
     self.name = colName
     self.df = None
 
   def __repr__(self):
-    return 'Frame(%s.%s|%s)' % (self.frameName, self.name, self.pivots)
-
-  # def mergeChild(self, childResult):
-  #   if self.df is not None:
-  #     raise Exception()
-  #   # assert isinstance(childResult, Frame) # Not working
-  #
-  #   assert type(df) == pd.DataFrame
-  #   assert set(self.pivots).issubset(df.pivots)
-  #   assert self.name in df.columns
+    return 'Frame(%s.%s|%s)' % (self.tableName, self.name, self.pivots)
 
   def getPivots(self):
     return self.pivots
@@ -45,71 +34,86 @@ class Frame(object):
       assert col in df.columns, 'Pivot col %s not found in %s' % (col, df.columns)
 
     assert self.name in df.columns, '%s not in %s' % (self.name, df.columns)
-    self.df = df
+    self.df = df.copy()
 
   def get_stripped(self):
     if self.df is None:
       raise Exception()
+    # We only want the main column (self.name) and the pivots.
     wantedCols = list(set([self.name]) | set(self.pivots))
-    # print("frame is %s" % self.name)
-    # print("> trying to get %s from %s" % (wantedCols, self.df.columns))
     return self.df[wantedCols]
 
-  # REVIEW perhaps rename?
-  def getWithNamedRoot(self, rootName):
-    """
-    In something like `Output.MEAN(Sales.price|..)`, the result of evaluating
-    price is a Frame in which everything (eg. pivots, frameName, colName etc) is
-    named with respect to Sales. However, the result of evaluating Sales.price
-    should be with respect to Output. This function exists to make this
-    translation.
-    """
+  def rename_pivot(self, old, new):
+    self.df.rename(
+      columns={ old: new },
+      inplace=True,
+    )
+    self.pivots = [(p if p != old else new) for p in self.pivots]
 
-    # FIXME: this should be a copy
-
-    # TODO: this also necessary?
-    # self.frameName = rootName
-
-    assert self.df is not None
-
-    col = self.get_stripped().copy()
-
-    columns = { self.name: "%s.%s" % (rootName, self.name), }
-    self.name = "%s.%s" % (rootName, self.name)
-    col.rename(
-      columns=columns,
+  def rename(self, new):
+    old = self.name
+    self.name = new
+    self.df.rename(
+      columns={ old: new },
       inplace=True
     )
 
-    self.fillData(col, True)
-
-    return self
-
-  # REVIEW perhaps rename?
-  def getAsNested(self, ctx, frameOutName, keyOut):
+  def translate_pivots_root(self, ctx, current, translation):
     """
-    In something like `Sales.item.category`, category belongs to the Items
-    table. The result of evaluating the category field is a Frame in which
-    everything (eg. pivots, frameName, colName etc) is named with respect to
-    Items. However, the result of evaluating item.category should be a
-    Frame with respect to Sales. This function exists to make
-    this translation.
+      # TODO
+      # If a pivot in result is 'order.user' and if 'user' (ie. 'Users.id')
+      # is a pivot of Output, we have to rename 'order.user' somehow to make it
+      # work.
     """
 
-    def nestedName(name):
-      return '%s.%s' % (keyOut, name)
+    if set(self.pivots).issubset(ctx.df.columns):
+      return
 
-    # FIXME WARNING keyIn should be passed as an argument!
-    keyIn = 'id'
-    nested = Frame(nestedName(self.name), ctx, frameOutName, [nestedName(keyIn)])
+    assert translation
 
-    # Merge into frameOutName the generated column from tableIn.
-    col = self.get_stripped().copy()
-    col.rename(
-      columns=dict((c, nestedName(c)) for c in col.columns),
-      inplace=True
-    )
+    for (new, old) in translation:
+      print("> translating pivot %s to %s" % (new, old))
+      assert old in self.df.columns
+      self.df.rename(columns={ old: new }, inplace=True)
+      self.pivots = list(map(lambda x: x if x != old else new, self.pivots))
 
-    nested.fillData(col)
+    # print("translation!", self.pivots, self.df.columns)
 
-    return nested
+    # NOTE Code below is good, but it implements inferred translation. Code
+    # above implements explicit translation (uses Table<a=b> syntax).
+    # for col in self.pivots.copy():
+    #   if col == 'CMONTH(date)':
+    #     continue
+    #
+    #   # print(current, tableIn, colIn, ctx.pointers)
+    #   info = ctx.getGraphLeafInformation(self.tableName, col)
+    #   if not info:
+    #     raise Exception('getGraphLeafInformation failed', self.tableName, col)
+    #   tableIn, colIn = info
+    #
+    #   pointers = ctx.findGraphEdge(tableOut=current, tableIn=tableIn, colIn=colIn)
+    #   if not pointers:
+    #     raise Exception('Failed to translate %s to table %s' % (col, current))
+    #
+    #   # REVIEW: what are the cons of this??? what if we don't want to match
+    #   # them>??? Does the colIn field have to be unique?
+    #   if len(pointers) > 1:
+    #     # BUG we don't want this exactly.
+    #     # Child.father -> Parent and Child.mother -> Parent.
+    #     # We should offer some pattern matching.
+    #     raise Exception('Multiple edges found to %s' % tableIn)
+    #
+    #   # Rename pivot to col1 (ie. pointers[0][1])
+    #
+    #   translation = pointers[0][1]
+    #   print("> Matching attribute found for {}: {}.{} points to {}.{}".format(col, *pointers[0]))
+    #
+    #   if translation == col:
+    #     print("Already called that. Skip.")
+    #     continue
+    #   # elif translation in self.pivots:
+    #   #   raise Exception('Should')
+    #   self.pivots = list(map(lambda x: x if x != col else translation, self.pivots))
+    #   self.df.rename(columns={col:translation}, inplace=True)
+    #
+    # print("New pivots:%s columns:%s" % (self.pivots, self.df.columns))
