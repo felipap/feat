@@ -28,8 +28,13 @@ def annotate_match(method):
     [children, meta] = args
 
     result = method(self, children, meta)
-    assert type(result) == dict, "decorator expects method result to always be a dictionary"
-    result["name"] = self.text[meta.start_pos: meta.end_pos]
+    assert type(result) == dict, \
+      "decorator expects method result to always be a dictionary"
+    name = self.text[meta.start_pos: meta.end_pos]\
+      .replace("\n","")\
+      .replace(" ","")\
+      .replace("\t","")
+    result["name"] = name
     # result["_last"] = method.__name__
     return result
 
@@ -43,25 +48,6 @@ class JSONifier(Transformer):
       """
 
       self.text = text
-
-  command = v_args()(lambda self, x: x[0])
-
-  @v_args(meta=True)
-  def command_col(self, children, meta):
-      return {
-          "command": "command_col",
-          "column": children[0],
-      }
-
-  @v_args(meta=True)
-  def command_rel(self, children, meta):
-      return {
-          "command": "command_rel",
-          "table1": children[0].value,
-          "col1": children[1].value,
-          "table2": children[2].value,
-          "col2": children[3].value,
-      }
 
   @v_args(meta=True)
   @annotate_match
@@ -153,7 +139,7 @@ def parseLineToCommand(string):
 
   json_parser = Lark(
     grammar,
-    start='command',
+    start='root_column',
     propagate_positions=True,
     debug=True)
 

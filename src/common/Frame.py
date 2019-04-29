@@ -3,45 +3,53 @@ import copy
 
 class Frame(object):
   """
-  (pivots, colName)
   """
 
-  def __init__(self, colName, ctx, tableName, pivots):
-    assert type(colName) == str
-    assert type(pivots) != str # This mistake happens a lot.
-    self.tableName = tableName
+  def __init__(self, name, table_name, pivots):
+    """
+    Note that pivots might include the own column name. If an Orders table has a
+    compose key (buyer, product, time), a frame containing just the column
+    product has all these three columns as pivot.
+    """
+    assert type(name) == str
+    assert type(pivots) != str # This happens a lot.
+    self.table_name = table_name
 
     self.pivots = set(pivots)
-    self.name = colName
+    self.name = name
     self.df = None
 
-  def __repr__(self):
-    return 'Frame(%s.%s|%s)' % (self.tableName, self.name, self.pivots)
 
-  def getPivots(self):
+  def __repr__(self):
+    return 'Frame(%s.%s|%s)' % (self.table_name, self.name, self.pivots)
+
+
+  def get_pivots(self):
     return self.pivots
 
-  def fillData(self, df, _force=False):
-    if self.df is not None and not _force:
-      raise Exception()
 
+  def fill_data(self, df):
     assert type(df) == pd.DataFrame
-    # NOTE: In the future, it might make sense to soften this restriction, for
-    # instance, to allow {'month_block', 'item'} !< {'month_block', 'item.category'}.
-    ourPivots = self.pivots # [*self.pivots,self.name]
-
     for col in self.pivots:
       assert col in df.columns, 'Pivot col %s not found in %s' % (col, df.columns)
-
     assert self.name in df.columns, '%s not in %s' % (self.name, df.columns)
-    self.df = df.copy()
+
+    # if df.drop_duplicates().shape[0] != df.shape[0]:
+    #   print("WARNING: frame %s filled with duplicate data" % self)
+    # NOTE THIS IS NEW!!!!
+    all_columns = list(set([*self.pivots, self.name]))
+    self.df = df.copy()[all_columns].drop_duplicates()
+
 
   def get_stripped(self):
     if self.df is None:
       raise Exception()
     # We only want the main column (self.name) and the pivots.
     wantedCols = list(set([self.name]) | set(self.pivots))
+    if set(self.df.columns) != set(wantedCols):
+      print("THIS SHOULD NOT BE THE CASE.", self.df.columns, wantedCols)
     return self.df[wantedCols]
+
 
   def rename_pivot(self, old, new):
     self.df.rename(
@@ -50,6 +58,7 @@ class Frame(object):
     )
     self.pivots = [(p if p != old else new) for p in self.pivots]
 
+
   def rename(self, new):
     old = self.name
     self.name = new
@@ -57,6 +66,7 @@ class Frame(object):
       columns={ old: new },
       inplace=True
     )
+
 
   def translate_pivots_root(self, ctx, current, translation):
     """
@@ -69,11 +79,11 @@ class Frame(object):
     if set(self.pivots).issubset(ctx.df.columns):
       return
 
-    assert translation
+    assert translation, "A translation is required for column %s" % self.name
 
     for (new, old) in translation:
-      print("> translating pivot %s to %s" % (new, old))
-      assert old in self.df.columns
+      print("> translating pivot %s to %s" % (new, old), self.df.columns)
+      assert old in self.df.columns, self.df.columns
       self.df.rename(columns={ old: new }, inplace=True)
       self.pivots = list(map(lambda x: x if x != old else new, self.pivots))
 
@@ -86,9 +96,9 @@ class Frame(object):
     #     continue
     #
     #   # print(current, tableIn, colIn, ctx.pointers)
-    #   info = ctx.getGraphLeafInformation(self.tableName, col)
+    #   info = ctx.getGraphLeafInformation(self.table_name, col)
     #   if not info:
-    #     raise Exception('getGraphLeafInformation failed', self.tableName, col)
+    #     raise Exception('getGraphLeafInformation failed', self.table_name, col)
     #   tableIn, colIn = info
     #
     #   pointers = ctx.findGraphEdge(tableOut=current, tableIn=tableIn, colIn=colIn)

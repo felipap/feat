@@ -1,8 +1,3 @@
-command:
-  | command_rel
-  | root_column -> command_col
-
-command_rel: "relationship" TABLE_NAME"."LOWERCASE "=" TABLE_NAME"."LOWERCASE
 
 // A `root_column` describes a column that might belong to a different
 // data frame. Eg: Transactions.product
@@ -12,7 +7,7 @@ root_column:
 
 // TODO: document
 field_translation:
-  | "<" this_column "=" this_column (";" this_column "=" this_column)* ";"? ">"
+  | "{" this_column "=" this_column (";" this_column "=" this_column)* ";"? "}"
 
 // A `this_column` describes a column that is related 1:1 to the current
 // dataframe. Eg: product.category.name
@@ -44,4 +39,6 @@ LOWERCASE: /[a-z_]+/
 %import common.LCASE_LETTER
 %import common.NUMBER
 %import common.WS
+%import common.NEWLINE
+%ignore NEWLINE
 %ignore WS

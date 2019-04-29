@@ -37,7 +37,7 @@
 
     "Sales.SUM(item_cnt_day|CMONTH(date),shop,item)", // to predict
 
-    "FWD(Sales.SUM(item_cnt_day|CMONTH(date),shop,item),1,CMONTH(date)|CMONTH(date),shop,item)", // LAG SHOULD BE 1,2,3,6,12
+    "FWD(Sales.SUM(item_cnt_day|CMONTH(date),shop,item),1,CMONTH(date))", // LAG SHOULD BE 1,2,3,6,12
 
     "FWD(MEAN(Sales.SUM(item_cnt_day|CMONTH(date),shop,item)|CMONTH(date)),1,CMONTH(date))",
 

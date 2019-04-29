@@ -77,16 +77,15 @@ def fetch_existing_subframe(ctx, tree):
 
   # Original columns of the dataframe have the table pivots as their pivot.
   if tree['name'] in ctx.original_columns[ctx.current]:
-    # print("It is ORIIGNAL")
     result = ctx.create_subframe(tree['name'], ctx.get_pivots_for_table(ctx.current))
-    result.fillData(ctx.df)
+    result.fill_data(ctx.df)
     return result
 
   # If the column is not original, ctx.get_pivots_for_frame gives cached
   # information about frames we have already seen.
   # REVIEW good idea?
   result = ctx.create_subframe(tree['name'], ctx.get_pivots_for_frame(tree['name']))
-  result.fillData(ctx.df)
+  result.fill_data(ctx.df)
   return result
 
 @assemble_column_log_errors
@@ -98,14 +97,14 @@ def assemble_column(ctx, tree):
 
   if tree.get('is_terminal'):
     if 'function' not in tree:
+      print("tree is", tree)
       raise Exception('Does this ever happen?')
       # assert tree['this'] in ctx.df.columns, "Terminal node isn't a " \
       # "function, so expected a string that belongs to the dataframe."
       # result = ctx.create_subframe(tree['this'])
-      # result.fillData(ctx.df)
+      # result.fill_data(ctx.df)
       # return result
     result = assemble_function(ctx, tree)
-
     if not ctx.currHasColumn(result.name):
       ctx.merge_frame_with_df(result, on=list(result.pivots))
 
@@ -125,7 +124,6 @@ def assemble_column(ctx, tree):
     mapping = tree.get('translation', {}).get('map_str')
     childResult.translate_pivots_root(ctx, ctx.current, mapping)
     childResult.rename(tree['name'])
-    print("was jusst here", tree['name'], childResult, list(childResult.pivots))
 
     ctx.merge_frame_with_df(childResult, on=list(childResult.pivots))
 
@@ -170,5 +168,5 @@ def assemble_column(ctx, tree):
   # print("end result is", ctx.df.columns, childResult, "\n\n")
 
   result = ctx.create_subframe(tree['name'], ctx.get_pivots_for_table(ctx.current))
-  result.fillData(ctx.df)
+  result.fill_data(ctx.df)
   return result

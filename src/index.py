@@ -128,12 +128,16 @@ def assemble(shape, dataframes):
 
   ######
 
+  generated_columns = []
+
   for index, feature in enumerate(shape['features']):
-    print('\nProcessing {}/{}: {}'.format(index+1, len(shape['features']), feature))
     # REVIEW no need to validate tree?
     cmd = parseLineToCommand(feature)
+    print('\nProcessing {}/{}: {}'.format(index+1, len(shape['features']), cmd['name']))
 
-    result = assemble_column(context, cmd['column'])
+    generated_columns.append(cmd['name'])
+
+    result = assemble_column(context, cmd)
 
     # Calling assemble_column with context.current set to 'Output' should take
     # care of merging the assembled columns with the Output dataframe.
@@ -144,5 +148,4 @@ def assemble(shape, dataframes):
   import builtins
   builtins.context = context
 
-  return context.df
-  # return context.df[list(shape['output']['pivots']) + shape['features']]
+  return context.df[list(shape['output']['pivots']) + generated_columns]
