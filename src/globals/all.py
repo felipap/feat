@@ -1,7 +1,9 @@
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from dateutil import relativedelta
 import time
+
+from ..lib.gen_cartesian import gen_cartesian
 
 import numpy as np
 import pandas as pd
@@ -149,6 +151,29 @@ register_function('CMonth', 'CMONTH', call_cmonth, num_args=1)
 
 #
 
+def call_cdsince(ctx, name, args):
+  child = args[0]
+
+  assert child.get_stripped()[child.name].dtype == np.dtype('datetime64[ns]')
+
+  def apply(row):
+    if pd.isnull(row[child.name]):
+      return 1000000
+    return (datetime.now() - row[child.name]).days
+    # r = relativedelta.relativedelta(datetime.now(), row[child.name])
+    # return r.months  * (12 * r.years)
+
+  df = child.get_stripped().copy()
+  df[name] = df.apply(apply, axis=1)
+
+  result = ctx.create_subframe(name, child.get_pivots())
+  result.fill_data(df)
+  return result
+
+register_function('CDaySince', 'CDAYSINCE', call_cdsince, num_args=1)
+
+#
+
 def call_cmsince(ctx, name, args):
   child = args[0]
 
@@ -157,8 +182,9 @@ def call_cmsince(ctx, name, args):
   def apply(row):
     if pd.isnull(row[child.name]):
       return 1000
-    r = relativedelta.relativedelta(datetime.now(), row[child.name])
-    return r.months * (r.years+1)
+    return round((datetime.now() - row[child.name]).days / 30)
+    # r = relativedelta.relativedelta(datetime.now(), row[child.name])
+    # return r.months * (12 * r.years)
 
   df = child.get_stripped().copy()
   df[name] = df.apply(apply, axis=1)
@@ -201,3 +227,78 @@ def call_sum(ctx, name, args, pivots):
   return result
 
 register_function('Sum', 'SUM', call_sum, num_args=1, takes_pivots=True)
+
+#
+
+def call_last_before(ctx, name, args, pivots):
+  child = args[0]
+  time_col = args[1].name
+
+  groupbyMinusTime = list(set(pivots)-{time_col})
+
+  # df['item_shop_last_sale'] = -1
+  # NOTE the order of pivots will determine the order of the columns inside the
+  # tuples.
+  # existing_items = set(ctx.df[pivots].drop_duplicates().itertuples(index=False, name=None))
+  # last_seen = {}
+  # count = 0
+  # it = df.sort_values(time_col).iterrows()
+  # for idx, row in it:
+  #   if count%50000 == 0:
+  #     print("count is", count, count/df.shape[0])
+  #   count += 1
+  #
+  #   key = tuple(row[groupbyMinusTime])
+  #
+  #   if key not in last_seen:
+  #     if row[name] != 0:
+  #       if tuple(row[pivots]) in existing_items:
+  #         # print("Yes it is", row[pivots])
+  #         last_seen[key] = row[time_col]
+  #   else:
+  #     last = last_seen[key]
+  #     df.at[idx, 'item_shop_last_sale'] = row[time_col] - last
+  #     last_seen[key] = row[time_col]
+  # display(df)
+
+  colUniqueVals = { pivot: ctx.df[pivot].unique() for pivot in pivots}
+  df = gen_cartesian(colUniqueVals)
+
+  original = df.copy()
+
+  df[name] = -1
+
+  date_options = sorted(ctx.df[time_col].unique(), reverse=True)
+  for date in date_options:
+    maxed = ctx.df[ctx.df[time_col]<=date].groupby(groupbyMinusTime).agg({ child.name: ['max'] })
+
+    maxed.columns = [name] # Before reset_index
+    maxed.reset_index(inplace=True)
+    # maxed[time_col] = date
+
+    original['key'] = -100
+    original.loc[original[time_col]>=date-1, 'key'] = 1
+
+    maxed['key'] = 1
+    # maxed[maxed[time_col]]['key']
+
+    print("original")
+    # display(original[original[time_col]<=date])
+
+    other = pd.merge(original, \
+      maxed, \
+      on=[*groupbyMinusTime,'key'], \
+      how='left', \
+      suffixes=(False,False),)
+    # display(other)
+    df.update(other)
+
+    # display(df[df['order.customer']=='5b69c4280998ba2b42deb32c']) # 5bee020c50c3c0094d2b2e6c
+
+  display(df[df['order.customer']=='5b69c4280998ba2b42deb32c'].sort_values('CMONTH(order.date)'))
+
+  result = ctx.create_subframe(name, pivots)
+  result.fill_data(df)
+  return result
+
+register_function('LastBefore', 'LAST_BEFORE', call_last_before, num_args=2, takes_pivots=True)

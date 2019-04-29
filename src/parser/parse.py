@@ -132,7 +132,9 @@ class JSONifier(Transformer):
     }
 
   array = list
+
   number = v_args(inline=True)(float)
+  string = v_args(inline=True)(str)
 
 def parseLineToCommand(string):
   grammar = open(GRAMMAR_FILE_PATH).read()

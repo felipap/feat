@@ -26,6 +26,7 @@ groupby: "|" this_column ("," this_column)*
 
 primitive:
   | NUMBER -> number
+  | /[ubf]?r?("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i -> string
 //  | "`" /[^``]*/ "`" -> escaped
 //  | "[" [primitive ("," primitive)*] "]" -> array
 

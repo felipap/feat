@@ -6,12 +6,14 @@ import numpy as np
 
 from .common.Context import Context
 from .common.Graph import Graph
+from .lib.gen_cartesian import gen_cartesian
 from .assembler import assemble_column
 from .parser import parseLineToCommand
 
 def genMonthCount(start, end):
   curr = start
   while curr < end:
+    print("%s is %s" % (curr, (curr.year - 2000)*12+curr.month))
     yield (curr.year - 2000)*12+curr.month
     curr += relativedelta(months=1)
 
@@ -31,13 +33,7 @@ def gen_unique_product(colUniqueVals, dataframes):
   #   _sales = train[train.month_block==date]
   #   m2.append(np.array(list(product([date], _sales.shop.unique(), _sales.item.unique())), dtype='int16'))
 
-  df = pd.DataFrame().assign(key=1)
-  # Generate cartesian product of the columns in colUniqueVals
-  # Uses https://stackoverflow.com/questions/13269890
-  for key, values in colUniqueVals.items():
-    this = pd.DataFrame({ key: values })
-    df = pd.merge(df, this.assign(key=1), on='key', how='outer')
-  df.drop('key', axis=1, inplace=True)
+  df = gen_cartesian(colUniqueVals)
 
   # REVIEW decide what to do with types
   for column in df.columns:
