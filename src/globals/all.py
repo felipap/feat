@@ -29,23 +29,23 @@ def call_fwd(ctx, name, args, pivots):
   time_col = args[2].name
   child = args[0]
 
-  to_shift = child.get_stripped()
-  to_shift.rename(columns={ child.name: name }, inplace=True)
+  shifted = child.get_stripped()
+  shifted.rename(columns={ child.name: name }, inplace=True)
 
-  to_shift[time_col] += lag
+  shifted[time_col] += lag
 
-  # to_shift[time_col] = to_shift[time_col].astype(np.int64)
+  # shifted[time_col] = shifted[time_col].astype(np.int64)
 
   # If pivots isn't supplied, use child's pivots instead.
   if pivots is None:
     pivots = child.pivots
   result = ctx.create_subframe(name, pivots)
-  result.fill_data(to_shift)
+  result.fill_data(shifted)
   return result
 
 register_function('Forward', 'FWD', call_fwd, num_args=3, takes_pivots=True)
 
-#
+#f
 
 def call_get(ctx, name, args, pivots):
   child = args[0]
@@ -75,7 +75,7 @@ def call_meandiff(ctx, name, args, pivots):
 
   groupbyMinusTime = list(set(groupby)-{time_col})
 
-  df = child.get_stripped().copy()
+  df = child.get_stripped()
   if groupbyMinusTime:
     childMean = df.groupby(groupbyMinusTime).agg({ child.name: ['mean'] })
     # IDEA dynamically execute Mean() here to do this work?
@@ -132,7 +132,7 @@ def call_cmonth(ctx, name, args):
 
   # print('date is', child.get_stripped().columns, name, child.name)
 
-  assert child.name.endswith('date') # in child.get_stripped().columns
+  # assert child.name.endswith('date') # in child.get_stripped().columns
   assert child.get_stripped()[child.name].dtype == np.dtype('datetime64[ns]')
 
   def apply(row):
@@ -140,7 +140,7 @@ def call_cmonth(ctx, name, args):
     # return datetime.strptime(row[child.name], '%Y-%m-%dT%H:%M:%S.%f')
     value = row[child.name] # datetime.strptime(row['date'], '%Y-%m-%d')
     return int((value.year - 2000)*12+value.month)
-  df = child.get_stripped().copy()
+  df = child.get_stripped()
   df[name] = df.apply(apply, axis=1)
 
   result = ctx.create_subframe(name, child.get_pivots())
@@ -163,7 +163,7 @@ def call_cdsince(ctx, name, args):
     # r = relativedelta.relativedelta(datetime.now(), row[child.name])
     # return r.months  * (12 * r.years)
 
-  df = child.get_stripped().copy()
+  df = child.get_stripped()
   df[name] = df.apply(apply, axis=1)
 
   result = ctx.create_subframe(name, child.get_pivots())
@@ -183,10 +183,8 @@ def call_cmsince(ctx, name, args):
     if pd.isnull(row[child.name]):
       return 1000
     return round((datetime.now() - row[child.name]).days / 30)
-    # r = relativedelta.relativedelta(datetime.now(), row[child.name])
-    # return r.months * (12 * r.years)
 
-  df = child.get_stripped().copy()
+  df = child.get_stripped()
   df[name] = df.apply(apply, axis=1)
 
   result = ctx.create_subframe(name, child.get_pivots())
@@ -197,20 +195,21 @@ register_function('CMonthSince', 'CMONTHSINCE', call_cmsince, num_args=1)
 
 #
 
-def call_nunique(ctx, name, args, pivots):
+def call_exists(ctx, name, args, pivots):
   child = args[0]
   # FIXME: childResult should be used to generate the thing below, not ctx.df
   # and childName
-  agg = ctx.df.groupby(pivots).agg({ child.name: ['nunique'] })
+  agg = ctx.df.groupby(pivots).agg({ child.name: ['count'] })
   agg.columns = [name]
   agg.reset_index(inplace=True)
   # display(agg)
+  agg.loc[agg[name]>0,name] = 1
   agg[name] = agg[name].astype(np.int64) # REVIEW type cast
   result = ctx.create_subframe(name, pivots)
   result.fill_data(agg)
   return result
 
-register_function('Nunique', 'NUNIQUE', call_nunique, num_args=1, takes_pivots=True)
+register_function('Exists', 'EXISTS', call_exists, num_args=1, takes_pivots=True)
 
 #
 
@@ -230,75 +229,127 @@ register_function('Sum', 'SUM', call_sum, num_args=1, takes_pivots=True)
 
 #
 
-def call_last_before(ctx, name, args, pivots):
+def call_accumulate(ctx, name, args):
+  """
+  ACC might be given a frame "sparse in dates", but it fills it up because
+  accumulated rows show still show up for previously unexisting dates.
+  Eg. if there were orders in October and December, but none in November, a
+  count for November must still show up (with the same value as October).
+  """
+  time_col = 'CMONTH(date)' # args[2].name
+  child = args[0]
+  pivots = list(child.pivots)
+
+  original = child.get_stripped()
+  original.rename(columns={ child.name: name }, inplace=True)
+
+  # Tip: to better understand this, see how it works for a single customer.
+  # Eg: display(acc[acc.customer=='5b69c4280998ba2b42deb32c'])
+  # original = original[original.customer=='5b69c4280998ba2b42deb32c']
+
+  acc = original.copy()
+  acc.set_index(pivots, inplace=True)
+  leaf = original.copy()
+  date_counts = sorted(ctx.get_date_range())
+  for date in date_counts:
+    print("date", date)
+    leaf[time_col] += 1
+    leaf = leaf[leaf[time_col]<date_counts[-1]]
+    acc = leaf.set_index(pivots).add(acc, fill_value=0)
+    # Dates may only be those in date_counts.
+
+  # For debugging purposes. Must be done while acc is indexed.
+  acc['__original__'] = original.set_index(pivots)[name]
+  acc.reset_index(inplace=True)
+
+  acc.drop('__original__', axis=1, inplace=True)
+
+  display(acc)
+
+  result = ctx.create_subframe(name, pivots)
+  result.fill_data(acc)
+  return result
+
+register_function('Accumulate', 'ACC', call_accumulate, num_args=1, takes_pivots=False)
+
+#
+
+def call_time_since(ctx, name, args, pivots):
+  child = args[0]
+  time_col = 'CMONTH(date)' # args[1].name
+
+  import builtins
+  builtins.child = child
+
+  colUniqueVals = {}
+  for pivot in child.pivots:
+    colUniqueVals[pivot] = ctx.df[pivot].unique()
+  colUniqueVals[time_col] = ctx.get_date_range()
+  df = gen_cartesian(colUniqueVals)
+
+  df.set_index(list(child.pivots), inplace=True)
+  c = child.df.set_index(list(child.pivots))
+
+  df[child.name] = c[child.name]
+  df[name] = df[time_col]-df[child.name]
+
+  df.loc[df[name]<0,name] = -100
+
+  builtins.df = df
+  builtins.c = c
+  df.reset_index(inplace=True)
+
+  result = ctx.create_subframe(name, {time_col,*child.pivots})
+  result.fill_data(df)
+  return result
+
+register_function('TimeSince', 'TIME_SINCE', call_time_since, num_args=1, takes_pivots=True)
+
+#
+
+def call_tsinceseen(ctx, name, args, pivots):
   child = args[0]
   time_col = args[1].name
 
   groupbyMinusTime = list(set(pivots)-{time_col})
 
-  # df['item_shop_last_sale'] = -1
-  # NOTE the order of pivots will determine the order of the columns inside the
-  # tuples.
-  # existing_items = set(ctx.df[pivots].drop_duplicates().itertuples(index=False, name=None))
-  # last_seen = {}
-  # count = 0
-  # it = df.sort_values(time_col).iterrows()
-  # for idx, row in it:
-  #   if count%50000 == 0:
-  #     print("count is", count, count/df.shape[0])
-  #   count += 1
-  #
-  #   key = tuple(row[groupbyMinusTime])
-  #
-  #   if key not in last_seen:
-  #     if row[name] != 0:
-  #       if tuple(row[pivots]) in existing_items:
-  #         # print("Yes it is", row[pivots])
-  #         last_seen[key] = row[time_col]
-  #   else:
-  #     last = last_seen[key]
-  #     df.at[idx, 'item_shop_last_sale'] = row[time_col] - last
-  #     last_seen[key] = row[time_col]
-  # display(df)
-
   colUniqueVals = { pivot: ctx.df[pivot].unique() for pivot in pivots}
   df = gen_cartesian(colUniqueVals)
 
-  original = df.copy()
+  df_leaf = df.copy()
+  df[name] = np.NaN
 
-  df[name] = -1
+  date_counts = sorted(ctx.get_date_range(), reverse=False)
+  for date_count in date_counts:
+    maxed = ctx.df[ctx.df[time_col]<=date_count].groupby(groupbyMinusTime).agg({ child.name: ['max'] })
 
-  date_options = sorted(ctx.df[time_col].unique(), reverse=True)
-  for date in date_options:
-    maxed = ctx.df[ctx.df[time_col]<=date].groupby(groupbyMinusTime).agg({ child.name: ['max'] })
-
-    maxed.columns = [name] # Before reset_index
+    maxed.columns = [name] # Must come before reset_index.
     maxed.reset_index(inplace=True)
-    # maxed[time_col] = date
 
-    original['key'] = -100
-    original.loc[original[time_col]>=date-1, 'key'] = 1
+    # Use the pd.merge magic to combine the aggregated value into all rows
+    # in df for years after date_count.
+    df_leaf['__key__'] = 0
+    df_leaf.loc[df_leaf[time_col]>=date_count, '__key__'] = 123
+    maxed['__key__'] = 123
 
-    maxed['key'] = 1
-    # maxed[maxed[time_col]]['key']
-
-    print("original")
-    # display(original[original[time_col]<=date])
-
-    other = pd.merge(original, \
+    other = pd.merge(df_leaf, \
       maxed, \
-      on=[*groupbyMinusTime,'key'], \
+      on=[*groupbyMinusTime,'__key__'], \
       how='left', \
       suffixes=(False,False),)
-    # display(other)
     df.update(other)
 
-    # display(df[df['order.customer']=='5b69c4280998ba2b42deb32c']) # 5bee020c50c3c0094d2b2e6c
+  df[name] = df[time_col] - df[name]
+  df[name].fillna(10000000, inplace=True)
 
-  display(df[df['order.customer']=='5b69c4280998ba2b42deb32c'].sort_values('CMONTH(order.date)'))
+  # df = df[df['order.customer']=='5b69c4240998ba2b42de9708'].sort_values('CMONTH(order.date)')
+  # display(df[df['order.customer']=='5b69c4240998ba2b42de9708'].sort_values('CMONTH(order.date)'))
+  # display(df[df['order.customer']=='5b69c4280998ba2b42deb32c'].sort_values('CMONTH(order.date)'))
+
+  # display(df)
 
   result = ctx.create_subframe(name, pivots)
   result.fill_data(df)
   return result
 
-register_function('LastBefore', 'LAST_BEFORE', call_last_before, num_args=2, takes_pivots=True)
+register_function('TimeSince', 'TSINCESEEN', call_tsinceseen, num_args=2, takes_pivots=True)
