@@ -48,7 +48,7 @@ class Frame(object):
     wantedCols = list(set([self.name]) | set(self.pivots))
     if set(self.df.columns) != set(wantedCols):
       print("THIS SHOULD NOT BE THE CASE.", self.df.columns, wantedCols)
-    return self.df[wantedCols]
+    return self.df[wantedCols].drop_duplicates().copy()
 
 
   def rename_pivot(self, old, new):

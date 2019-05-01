@@ -1,5 +1,6 @@
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from timeit import default_timer as timer
 
 import pandas as pd
 import numpy as np
@@ -133,7 +134,10 @@ def assemble(shape, dataframes):
 
     generated_columns.append(cmd['name'])
 
+    start = timer()
     result = assemble_column(context, cmd)
+    end = timer()
+    print("elapsed:", end - start)
 
     # Calling assemble_column with context.current set to 'Output' should take
     # care of merging the assembled columns with the Output dataframe.

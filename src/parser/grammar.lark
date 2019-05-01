@@ -3,10 +3,11 @@
 // data frame. Eg: Transactions.product
 root_column:
   | this_column
-  | TABLE_NAME field_translation? "." this_column
+  | TABLE_NAME translation? "." this_column
 
-// TODO: document
-field_translation:
+// A `translation` instructs the assembler on how to translate columns from the
+// context of one table to another.
+translation:
   | "{" this_column "=" this_column (";" this_column "=" this_column)* ";"? "}"
 
 // A `this_column` describes a column that is related 1:1 to the current
