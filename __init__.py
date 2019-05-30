@@ -1,2 +1,2 @@
 
-from .src import assemble
+from .assembler import assemble
