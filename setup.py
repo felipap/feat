@@ -7,7 +7,7 @@ setup(
     version='0.0.1',
     description='',
     license='allrightsreserved',
-    packages=['src'],
+    packages=['assembler'],
     author='Felipe Pires',
     author_email='pires.a.felipe@gmail.com',
     keywords=['example'],
