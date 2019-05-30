@@ -46,7 +46,7 @@ def gen_unique_product(colUniqueVals, dataframes):
   return df
 
 
-def init_output_frame(dataframes, output_config, shape):
+def init_output_frame(dataframes, output_config, date_range):
 
   colUniqueVals = {}
   # QUESTION should we look over pointers or over pivots?
@@ -61,8 +61,6 @@ def init_output_frame(dataframes, output_config, shape):
     tableIn, keyIn = tableField.split('.')
 
     df = dataframes[tableIn]
-    assert tableIn in shape['pivots']
-    assert keyIn in shape['pivots'][tableIn]
 
     if 'restrict_ids_to' in output_config and column in output_config['restrict_ids_to']:
       t, f = output_config['restrict_ids_to'][column].split('.') # eg: Sales.location
@@ -72,16 +70,16 @@ def init_output_frame(dataframes, output_config, shape):
       colUniqueVals[column.lower()] = list(df[keyIn].unique())
     print("x %s (%s items)" % (column.lower(), len(colUniqueVals[column.lower()])))
 
-  start = datetime.strptime(output_config['date_start'], '%Y-%m')
-  end = datetime.strptime(output_config['date_end'], '%Y-%m')
+  start = datetime.strptime(date_range[0], '%Y-%m')
+  end = datetime.strptime(date_range[1], '%Y-%m')
 
   dates = list(genMonthCount(start, end))
-  colUniqueVals[shape['output']['date_block']] = dates
-  print("x %s (%s items)" % (shape['output']['date_block'], len(dates)))
+  colUniqueVals[output_config['date_block']] = dates
+  print("x %s (%s items)" % (output_config['date_block'], len(dates)))
 
   Output = gen_unique_product(colUniqueVals, dataframes)
 
-  # Output.sort_values([shape['output']['date_block'],'location','product'], inplace=True)
+  # Output.sort_values([output_config['date_block'],'location','product'], inplace=True)
 
   # Aggregate train set by shop/item pairs to calculate target
   # aggreagates, then <b>clip(0,20)</b> target value. This way train
@@ -101,22 +99,34 @@ def init_output_frame(dataframes, output_config, shape):
 
   return Output
 
-def assemble(shape, dataframes):
-  dataframes['Output'] = init_output_frame(dataframes, shape['output'], shape)
+
+def caseword(word):
+  return word[0].upper()+word[1:]
+
+def assemble(shape, type_config, dataframes):
+  dataframes['Output'] = init_output_frame(dataframes, shape['output'], shape['date_range'])
+
+  for (type_name, config) in type_config.items():
+    if dataframes[caseword(type_name)].duplicated(config['pivots']).shape[0]:
+      print("Dropping duplicates!!", dataframes[caseword(type_name)].shape)
+      dataframes[caseword(type_name)] = dataframes[caseword(type_name)].drop_duplicates(config['pivots'])
 
   context = Context(dataframes, 'Output', shape['output']['date_block'])
 
   # Create graph of connections between tables.
-
   context.graph = Graph()
-  for (val, key) in shape['pivots'].items():
-    context.graph.add_node(val, pivots=key)
+  for (type_name, config) in type_config.items():
+    context.graph.add_node(caseword(type_name), pivots=config['pivots'])
+
+  # Must register all nodes first, and only then register the edges.
+  for (type_name, config) in type_config.items():
+    if 'pointers' in config:
+      for (colOut, compose) in config['pointers'].items():
+        tableIn, colIn = compose.split('.')
+        print(caseword(type_name), colOut, caseword(tableIn), colIn)
+        context.graph.add_edge(caseword(type_name), colOut, caseword(tableIn), colIn)
+  
   context.graph.add_node('Output', pivots=shape['output']['pivots'])
-
-  for (val, key) in shape['pointers'].items():
-    tableOut, colOut, tableIn, colIn = (*val.split('.'),*key.split('.'))
-    context.graph.add_edge(tableOut, colOut, tableIn, colIn)
-
   for val, key in shape['output']['pointers'].items():
     colOut, tableIn, colIn = (val,*key.split('.'))
     context.graph.add_edge('Output', colOut, tableIn, colIn)
@@ -126,7 +136,7 @@ def assemble(shape, dataframes):
   ######
 
   generated_columns = []
-
+  
   for index, feature in enumerate(shape['features']):
     # REVIEW no need to validate tree?
     cmd = parseLineToCommand(feature)

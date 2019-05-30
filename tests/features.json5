@@ -27,8 +27,6 @@
     "Items.category": "Categories.id",
   },
 
-  "output_col": "Sales.SUM(item_cnt_day|CMONTH(date),shop,item)",
-
   "features": [
     "shop.city_code",
     "item.category",

@@ -24,6 +24,24 @@ def getFunction(name):
 
 #
 
+def call_greaterthan(ctx, name, args):
+  child = args[0]
+  arg = args[1]
+
+  df = child.get_stripped()
+  df.rename(columns={ child.name: name }, inplace=True)
+  # display(df[name])
+  df[name] = (df[name]>0).astype(np.int64)
+  # display(df[name])
+
+  result = ctx.create_subframe(name, child.pivots)
+  result.fill_data(df)
+  return result
+
+register_function('GreaterThan', 'GREATERTHAN', call_greaterthan, num_args=2)
+
+#
+
 def call_fwd(ctx, name, args, pivots):
   lag = args[1]
   time_col = args[2].name
@@ -45,7 +63,7 @@ def call_fwd(ctx, name, args, pivots):
 
 register_function('Forward', 'FWD', call_fwd, num_args=3, takes_pivots=True)
 
-#f
+#
 
 def call_get(ctx, name, args, pivots):
   child = args[0]
@@ -264,8 +282,6 @@ def call_accumulate(ctx, name, args):
 
   acc.drop('__original__', axis=1, inplace=True)
 
-  display(acc)
-
   result = ctx.create_subframe(name, pivots)
   result.fill_data(acc)
   return result
@@ -352,4 +368,4 @@ def call_tsinceseen(ctx, name, args, pivots):
   result.fill_data(df)
   return result
 
-register_function('TimeSince', 'TSINCESEEN', call_tsinceseen, num_args=2, takes_pivots=True)
+register_function('TimeSinceSeen', 'TSINCESEEN', call_tsinceseen, num_args=2, takes_pivots=True)

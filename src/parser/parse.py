@@ -63,7 +63,7 @@ class JSONifier(Transformer):
         "root": children[0].value,
         "next": children[1],
       }
-    # If : TABLE_NAME field_translation "." this_column
+    # If : TABLE_NAME translation "." this_column
     return {
       "root": children[0].value,
       "translation": children[1],
@@ -72,7 +72,7 @@ class JSONifier(Transformer):
 
   @v_args(meta=True)
   @annotate_match
-  def field_translation(self, children, _):
+  def translation(self, children, _):
     assert len(children) % 2 == 0
 
     return {
