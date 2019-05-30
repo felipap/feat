@@ -3,13 +3,13 @@
 from setuptools import setup
 
 setup(
-    name='hellostackoverflow',
+    name='assembler',
     version='0.0.1',
-    description='a pip-installable package example',
-    license='MIT',
-    packages=['hellostackoverflow'],
-    author='Benjamin Gerfelder',
-    author_email='benjamin.gerfelder@gmail.com',
+    description='',
+    license='allrightsreserved',
+    packages=['src'],
+    author='Felipe Pires',
+    author_email='pires.a.felipe@gmail.com',
     keywords=['example'],
-    url='https://github.com/bgse/hellostackoverflow'
+    url='https://github.com/felipap/assembler'
 )
