@@ -1,7 +1,11 @@
-venv
 .vscode
+**/venv
 .ipynb_checkpoints
-tests
+tests/
+build/
+dist/
+
+
 __pycache__
 testdata
 *.pyc
