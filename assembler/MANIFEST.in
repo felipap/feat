@@ -1,2 +1,3 @@
 include assembler/parser/grammer.lark
+include *.kar
 recursive-include assembler/parser *
