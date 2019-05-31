@@ -13,6 +13,6 @@ setup(
 
     author='Felipe Pires',
     author_email='pires.a.felipe@gmail.com',
-    keywords=['example'],
+    keywords=[],
     url='https://github.com/felipap/assembler'
 )

@@ -1,0 +1,46 @@
+
+// A `root_column` describes a column that might belong to a different
+// data frame. Eg: Transactions.product
+root_column:
+  | this_column
+  | TABLE_NAME translation? "." this_column
+
+// A `translation` instructs the assembler on how to translate columns from the
+// context of one table to another.
+translation:
+  | "{" this_column "=" this_column (";" this_column "=" this_column)* ";"? "}"
+
+// A `this_column` describes a column that is related 1:1 to the current
+// dataframe. Eg: product.category.name
+this_column:
+  | LOWERCASE
+  | LOWERCASE "." this_column
+  | fn_call
+
+fn_call: FUNCTION_NAME "(" fn_args (groupby)?")"
+fn_args: fn_arg ("," fn_arg)*
+fn_arg:
+  | root_column
+  | primitive
+
+groupby: "|" this_column ("," this_column)*
+
+primitive:
+  | NUMBER -> number
+  | /[ubf]?r?("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i -> string
+//  | "`" /[^``]*/ "`" -> escaped
+//  | "[" [primitive ("," primitive)*] "]" -> array
+
+FUNCTION_NAME: /[A-Z_]+/
+TABLE_NAME: /[A-Z][a-z_]*/
+LOWERCASE: /[a-z_]+/
+
+%import common.CNAME
+%import common.ESCAPED_STRING
+%import common.UCASE_LETTER
+%import common.LCASE_LETTER
+%import common.NUMBER
+%import common.WS
+%import common.NEWLINE
+%ignore NEWLINE
+%ignore WS
