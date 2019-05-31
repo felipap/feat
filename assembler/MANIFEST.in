@@ -1,4 +1,0 @@
-include assembler/parser/grammer.lark
-include *.tar
-recursive-include assembler/parser *
-recursive-include assembler/

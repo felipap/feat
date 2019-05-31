@@ -7,7 +7,7 @@ setup(
     version='0.0.1',
     description='',
     license='UNLICENSED',
-    
+
     packages=find_packages(exclude=['tests*']),
     include_package_data=True,
 
