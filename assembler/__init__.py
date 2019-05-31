@@ -1,2 +1,2 @@
 
-from .index import assemble
+from .assembler import assemble
