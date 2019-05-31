@@ -1,4 +1,4 @@
 include assembler/parser/grammer.lark
-include *.kar
+include *.tar
 recursive-include assembler/parser *
 recursive-include assembler/
