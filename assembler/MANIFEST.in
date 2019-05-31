@@ -1,1 +1,2 @@
+include assembler/parser/grammer.lark
 recursive-include assembler/parser *
