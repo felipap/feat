@@ -356,7 +356,7 @@ def call_tsinceseen(ctx, name, args, pivots):
     df.update(other)
 
   df[name] = df[time_col] - df[name]
-  df[name].fillna(10000000, inplace=True)
+  # df[name].fillna(10000000, inplace=True)
 
   # df = df[df['order.customer']=='5b69c4240998ba2b42de9708'].sort_values('CMONTH(order.date)')
   # display(df[df['order.customer']=='5b69c4240998ba2b42de9708'].sort_values('CMONTH(order.date)'))
@@ -365,7 +365,8 @@ def call_tsinceseen(ctx, name, args, pivots):
   # display(df)
 
   result = ctx.create_subframe(name, pivots)
-  result.fill_data(df)
+  result.fill_data(df, 10000)
+
   return result
 
 register_function('TimeSinceSeen', 'TSINCESEEN', call_tsinceseen, num_args=2, takes_pivots=True)

@@ -79,18 +79,26 @@ class Context(object):
         how=how, \
         suffixes=(False, False))
     else:
+      copied_frame = frame.copy()
       outer_pivots = [left_on]
-      frame.rename_pivot(right_on, '__JOIN__')
+      copied_frame.rename_pivot(right_on, '__JOIN__')
       self.df = pd.merge(self.df, \
-        frame.get_stripped(), \
+        copied_frame.get_stripped(), \
         left_on=left_on, \
         right_on='__JOIN__', \
         how='left', \
         suffixes=(False, False))
       self.df.drop('__JOIN__', axis=1, inplace=True)
 
+    if not frame.fillnan is None:
+      self.df.fillna(value={ frame.name: frame.fillnan }, inplace=True)
+
     # self.cached_frame_pivots[frame.name] = self.graph.pivots[self.current]
     self.cached_frame_pivots[frame.name] = outer_pivots
+
+    copied = frame.copy()
+    copied.fill_data(self.df)
+    return copied
 
   def findGraphEdge(self, tableOut=None, colOut=None, tableIn=None, colIn=None):
     return self.graph.find_edge(tableOut, colOut, tableIn, colIn)

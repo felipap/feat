@@ -125,9 +125,11 @@ def assemble_column(ctx, tree):
     childResult.translate_pivots_root(ctx, ctx.current, mapping)
     childResult.rename(tree['name'])
 
-    ctx.merge_frame_with_df(childResult, on=list(childResult.pivots))
-
-    return childResult
+    # merge_frame_with_df will return an expanded version of childResult, with
+    # combinations of pivots that might not be in the original childResult. We
+    # return that because merge_frame_with_df will fillna() those new values,
+    # which is something that we need to pass to the parent nodes.
+    return ctx.merge_frame_with_df(childResult, on=list(childResult.pivots))
 
   # Handle the implicit 1-to-1 join.
   # Pure tables can't have dots in their column names, so being here means that

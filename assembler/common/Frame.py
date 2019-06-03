@@ -18,6 +18,7 @@ class Frame(object):
     self.pivots = set(pivots)
     self.name = name
     self.df = None
+    self.fillnan = None
 
 
   def __repr__(self):
@@ -28,12 +29,20 @@ class Frame(object):
     return self.pivots
 
 
-  def fill_data(self, df):
+  def copy(self):
+    frame = Frame(self.name, self.table_name, self.pivots)
+    frame.fillnan = self.fillnan
+    frame.df = self.df.copy()
+    return frame
+
+
+  def fill_data(self, df, fillnan=None):
     assert type(df) == pd.DataFrame
     for col in self.pivots:
       assert col in df.columns, 'Pivot col %s not found in %s' % (col, df.columns)
     assert self.name in df.columns, '%s not in %s' % (self.name, df.columns)
 
+    self.fillnan = fillnan
     # if df.drop_duplicates().shape[0] != df.shape[0]:
     #   print("WARNING: frame %s filled with duplicate data" % self)
     # NOTE THIS IS NEW!!!!
