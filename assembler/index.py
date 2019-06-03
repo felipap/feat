@@ -14,8 +14,8 @@ from .parser import parseLineToCommand
 def genMonthCount(start, end):
   curr = start
   while curr < end:
-    print("%s is %s" % (curr, (curr.year - 2000)*12+curr.month))
-    yield (curr.year - 2000)*12+curr.month
+    print("%s is %s" % (curr, (curr.year - 1970)*12+curr.month))
+    yield (curr.year - 1970)*12+curr.month
     curr += relativedelta(months=1)
 
 

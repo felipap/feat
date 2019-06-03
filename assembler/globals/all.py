@@ -31,7 +31,7 @@ def call_greaterthan(ctx, name, args):
   df = child.get_stripped()
   df.rename(columns={ child.name: name }, inplace=True)
   # display(df[name])
-  df[name] = (df[name]>0).astype(np.int64)
+  df[name] = (df[name]>int(arg)).astype(np.int64)
   # display(df[name])
 
   result = ctx.create_subframe(name, child.pivots)
@@ -157,7 +157,7 @@ def call_cmonth(ctx, name, args):
     # print("child.name", child.name, row[child.name])
     # return datetime.strptime(row[child.name], '%Y-%m-%dT%H:%M:%S.%f')
     value = row[child.name] # datetime.strptime(row['date'], '%Y-%m-%d')
-    return int((value.year - 2000)*12+value.month)
+    return int((value.year - 1970)*12+value.month)
   df = child.get_stripped()
   df[name] = df.apply(apply, axis=1)
 
