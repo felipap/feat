@@ -80,6 +80,7 @@ class Context(object):
         suffixes=(False, False))
     else:
       copied_frame = frame.copy()
+      print("copied_frame name is", copied_frame.name)
       outer_pivots = [left_on]
       copied_frame.rename_pivot(right_on, '__JOIN__')
       self.df = pd.merge(self.df, \

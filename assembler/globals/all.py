@@ -58,7 +58,7 @@ def call_fwd(ctx, name, args, pivots):
   if pivots is None:
     pivots = child.pivots
   result = ctx.create_subframe(name, pivots)
-  result.fill_data(shifted)
+  result.fill_data(shifted, child.fillnan)
   return result
 
 register_function('Forward', 'FWD', call_fwd, num_args=3, takes_pivots=True)
