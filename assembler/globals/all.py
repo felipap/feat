@@ -309,7 +309,8 @@ def call_time_since(ctx, name, args, pivots):
   df[child.name] = c[child.name]
   df[name] = df[time_col]-df[child.name]
 
-  df.loc[df[name]<0,name] = -100
+  # Fill rows for which event hasn't happened yet with very negative number.
+  df.loc[df[name]<0,name] = -99999
 
   builtins.df = df
   builtins.c = c
@@ -323,12 +324,12 @@ register_function('TimeSince', 'TIME_SINCE', call_time_since, num_args=1, takes_
 
 #
 
+# TODO: document
 def call_tsinceseen(ctx, name, args, pivots):
   child = args[0]
   time_col = args[1].name
 
   groupbyMinusTime = list(set(pivots)-{time_col})
-
   colUniqueVals = { pivot: ctx.df[pivot].unique() for pivot in pivots}
   df = gen_cartesian(colUniqueVals)
 
@@ -356,17 +357,9 @@ def call_tsinceseen(ctx, name, args, pivots):
     df.update(other)
 
   df[name] = df[time_col] - df[name]
-  # df[name].fillna(10000000, inplace=True)
-
-  # df = df[df['order.customer']=='5b69c4240998ba2b42de9708'].sort_values('CMONTH(order.date)')
-  # display(df[df['order.customer']=='5b69c4240998ba2b42de9708'].sort_values('CMONTH(order.date)'))
-  # display(df[df['order.customer']=='5b69c4280998ba2b42deb32c'].sort_values('CMONTH(order.date)'))
-
-  # display(df)
-
   result = ctx.create_subframe(name, pivots)
-  result.fill_data(df, 10000)
-
+  # Fill NaN values with big positive number.
+  result.fill_data(df, fillnan=10000)
   return result
 
 register_function('TimeSinceSeen', 'TSINCESEEN', call_tsinceseen, num_args=2, takes_pivots=True)
