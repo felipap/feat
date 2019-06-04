@@ -86,8 +86,10 @@ def fetch_existing_subframe(ctx, tree):
   # If the column is not original, ctx.get_pivots_for_frame gives cached
   # information about frames we have already seen.
   # REVIEW good idea?
-  result = ctx.create_subframe(tree['name'], ctx.get_pivots_for_frame(tree['name']))
-  result.fill_data(ctx.df)
+  cached = ctx.get_cached_frame(tree['name'])
+  result = ctx.create_subframe(tree['name'], cached.pivots)
+  print("fillnan is", cached.fillnan)
+  result.fill_data(ctx.df, cached.fillnan)
   return result
 
 @assemble_column_log_errors
@@ -163,7 +165,7 @@ def assemble_column(ctx, tree):
 
   childResult.rename(tree['name'])
 
-  if childResult.name in ctx.df.columns:
+  if ctx.currHasColumn(childResult.name):
     # Not expected, as the condition of it already being in columns should've
     # triggered the `tree['name'] in ctx.df.columns` check above.
     raise Exception()

@@ -9,7 +9,7 @@ class Context(object):
     self.original_columns = {name: val.columns for (name, val) in globals.items()}
     self.swapIn(current)
     self.timeCol = timeCol
-    self.cached_frame_pivots = {}
+    self.cached_frames = {}
 
   def swapIn(self, current):
     assert current in self.globals, '%s not registered' % current
@@ -32,13 +32,13 @@ class Context(object):
   def get_pivots_for_table(self, tableName):
     return self.graph.pivots[tableName]
 
-  def get_pivots_for_frame(self, name):
-    if not name in self.cached_frame_pivots:
-      print("WTF\n\n\n\n\n %s" % name, self.cached_frame_pivots[name])
-    return self.cached_frame_pivots.get(name)
+  def get_cached_frame(self, name):
+    if not name in self.cached_frames:
+      print("WTF\n\n\n\n\n %s" % name, self.cached_frames[name])
+    return self.cached_frames.get(name)
 
   def create_subframe(self, colName, pivots):
-    """Creates a frame derived from the self.current frame"""
+    """Creates a frame derived from the self.current dataframe"""
     return Frame(colName, self.current, pivots)
 
   def currHasColumn(self, colName):
@@ -93,8 +93,11 @@ class Context(object):
     if not frame.fillnan is None:
       self.df.fillna(value={ frame.name: frame.fillnan }, inplace=True)
 
-    # self.cached_frame_pivots[frame.name] = self.graph.pivots[self.current]
-    self.cached_frame_pivots[frame.name] = outer_pivots
+    # self.cached_frames[frame.name] = self.graph.pivots[self.current]
+    copied = frame.copy()
+    copied.pivots = outer_pivots
+    print("copying too", frame.fillnan, copied.fillnan)
+    self.cached_frames[frame.name] = copied
 
     # copied = frame.copy()
     # copied.fill_data(self.df)

@@ -159,4 +159,11 @@ def assemble(shape, type_config, dataframes):
   import builtins
   builtins.context = context
 
-  return context.df[list(shape['output']['pivots']) + generated_columns]
+  to_return = context.df[list(shape['output']['pivots']) + generated_columns]
+
+  # for col in to_return.columns:
+  #   if to_return[col].isna().any():
+  #     print("Column %s has empty" % col, to_return[col].unique())
+  # print('assembler is done\n\n\n')
+
+  return to_return

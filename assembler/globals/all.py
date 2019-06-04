@@ -22,6 +22,59 @@ def register_function(name, keyword, call, **kwargs):
 def getFunction(name):
   return fns.get(name)
 
+
+def call_foo(ctx, name, args):
+  child = args[0]
+  arg = args[1]
+
+  df = child.get_stripped()
+  df.rename(columns={ child.name: name }, inplace=True)
+  df[name] = (df[name]>int(arg)).astype(np.int64)
+
+  result = ctx.create_subframe(name, child.pivots)
+  result.fill_data(df, fillnan=0)
+  return result
+
+# register_function('Foo', 'FOO', call_foo, num_args=2)
+
+#
+
+def PARSE_FLEX_PLANS(ctx, name, args):
+  child = args[0]
+
+  df = child.get_stripped()
+  df.rename(columns={ child.name: name }, inplace=True)
+  
+  def foo(row):
+    # print(row)
+    field = row[name]
+    # customer = users[users['id']==row['customer']]
+    if field == '[]':
+      return 1
+
+    # print(field, '\n')
+    import pyjson5
+    plans = pyjson5.loads(field.replace(': True', ': true').replace(': False', ': false').replace(': None', ': null'))
+    # print(plans, '\n')
+    # print(plans[0]['items'][0]['id'])
+    return plans[0]['items'][0]['id']
+  
+  import traceback
+  
+  try:
+    df[name] = df.apply(foo, axis=1)
+  except Exception as e:
+    print("Error using .apply()", e)
+    traceback.print_exc()
+    asdf()
+
+  result = ctx.create_subframe(name, child.pivots)
+  result.fill_data(df, fillnan=0)
+  return result
+
+register_function('PARSE_FLEX_PLANS', 'PARSE_FLEX_PLANS', PARSE_FLEX_PLANS, num_args=1)
+
+
 #
 
 def call_greaterthan(ctx, name, args):
@@ -30,12 +83,10 @@ def call_greaterthan(ctx, name, args):
 
   df = child.get_stripped()
   df.rename(columns={ child.name: name }, inplace=True)
-  # display(df[name])
   df[name] = (df[name]>int(arg)).astype(np.int64)
-  # display(df[name])
 
   result = ctx.create_subframe(name, child.pivots)
-  result.fill_data(df)
+  result.fill_data(df, fillnan=0)
   return result
 
 register_function('GreaterThan', 'GREATERTHAN', call_greaterthan, num_args=2)
@@ -58,6 +109,8 @@ def call_fwd(ctx, name, args, pivots):
   if pivots is None:
     pivots = child.pivots
   result = ctx.create_subframe(name, pivots)
+  
+  print("It is: ", child.fillnan)
   result.fill_data(shifted, child.fillnan)
   return result
 
@@ -275,7 +328,6 @@ def call_exists(ctx, name, args, pivots):
   agg = ctx.df.groupby(pivots).agg({ child.name: ['count'] })
   agg.columns = [name]
   agg.reset_index(inplace=True)
-  # display(agg)
   agg.loc[agg[name]>0,name] = 1
   agg[name] = agg[name].astype(np.int64) # REVIEW type cast
   result = ctx.create_subframe(name, pivots)
@@ -345,7 +397,7 @@ register_function('Accumulate', 'ACC', call_accumulate, num_args=1, takes_pivots
 
 #
 
-def call_time_since(ctx, name, args, pivots):
+def call_timesince(ctx, name, args, pivots):
   child = args[0]
   time_col = 'CMONTH(date)' # args[1].name
 
@@ -375,7 +427,7 @@ def call_time_since(ctx, name, args, pivots):
   result.fill_data(df)
   return result
 
-register_function('TimeSince', 'TIME_SINCE', call_time_since, num_args=1, takes_pivots=True)
+register_function('TimeSince', 'TIME_SINCE', call_timesince, num_args=1, takes_pivots=True)
 
 #
 

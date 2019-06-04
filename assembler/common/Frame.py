@@ -5,7 +5,7 @@ class Frame(object):
   """
   """
 
-  def __init__(self, name, table_name, pivots):
+  def __init__(self, name, table_name, pivots, fillnan=None):
     """
     Note that pivots might include the own column name. If an Orders table has a
     compose key (buyer, product, time), a frame containing just the column
@@ -18,7 +18,7 @@ class Frame(object):
     self.pivots = set(pivots)
     self.name = name
     self.df = None
-    self.fillnan = None
+    self.fillnan = fillnan
 
 
   def __repr__(self):
@@ -37,7 +37,10 @@ class Frame(object):
 
 
   def fill_data(self, df, fillnan=None):
-    print("self.name", self, self.df is not None and self.df.columns, df.columns)
+    # print("self.name", self, self.df is not None and self.df.columns, df.columns)
+    
+    if self.df is not None:
+      print("YOU ARE REFILLING DATA BRO")
     
     assert type(df) == pd.DataFrame
     for col in self.pivots:
@@ -71,7 +74,7 @@ class Frame(object):
 
 
   def rename(self, new):
-    print("RENAME: %s to %s", self.name, new)
+    # print("RENAME: %s to %s", self.name, new)
     old = self.name
     self.name = new
     self.df.rename(
