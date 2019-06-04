@@ -21,7 +21,5 @@ assembler/lib/gen_cartesian.py
 assembler/parser/__init__.py
 assembler/parser/grammar.lark
 assembler/parser/parse.py
-assembler/parser/__pycache__/__init__.cpython-36.pyc
 assembler/parser/__pycache__/__init__.cpython-37.pyc
-assembler/parser/__pycache__/parse.cpython-36.pyc
 assembler/parser/__pycache__/parse.cpython-37.pyc

@@ -7,6 +7,8 @@ from functools import wraps
 import numpy as np
 import pandas as pd
 
+import sys
+sys.path.append('..')
 from ..common import Context, Frame, assert_returns_frame
 from ..globals import getFunction
 
@@ -95,8 +97,10 @@ def assemble_column(ctx, tree):
   if ctx.currHasColumn(tree.get('name')):
     return fetch_existing_subframe(ctx, tree)
 
+  is_function = 'function' in tree
+
   if tree.get('is_terminal'):
-    if 'function' not in tree:
+    if not is_function:
       print("tree is", tree)
       raise Exception('Does this ever happen?')
       # assert tree['this'] in ctx.df.columns, "Terminal node isn't a " \

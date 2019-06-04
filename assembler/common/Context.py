@@ -80,7 +80,6 @@ class Context(object):
         suffixes=(False, False))
     else:
       copied_frame = frame.copy()
-      print("copied_frame name is", copied_frame.name)
       outer_pivots = [left_on]
       copied_frame.rename_pivot(right_on, '__JOIN__')
       self.df = pd.merge(self.df, \
@@ -97,9 +96,9 @@ class Context(object):
     # self.cached_frame_pivots[frame.name] = self.graph.pivots[self.current]
     self.cached_frame_pivots[frame.name] = outer_pivots
 
-    copied = frame.copy()
-    copied.fill_data(self.df)
-    return copied
+    # copied = frame.copy()
+    # copied.fill_data(self.df)
+    # return copied
 
   def findGraphEdge(self, tableOut=None, colOut=None, tableIn=None, colIn=None):
     return self.graph.find_edge(tableOut, colOut, tableIn, colIn)

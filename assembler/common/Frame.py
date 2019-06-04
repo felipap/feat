@@ -37,9 +37,11 @@ class Frame(object):
 
 
   def fill_data(self, df, fillnan=None):
+    print("self.name", self, self.df is not None and self.df.columns, df.columns)
+    
     assert type(df) == pd.DataFrame
     for col in self.pivots:
-      assert col in df.columns, 'Pivot col %s not found in %s' % (col, df.columns)
+      assert col in df.columns, 'Pivot col \'%s\' not found in %s' % (col, df.columns)
     assert self.name in df.columns, '%s not in %s' % (self.name, df.columns)
 
     self.fillnan = fillnan
@@ -69,12 +71,15 @@ class Frame(object):
 
 
   def rename(self, new):
+    print("RENAME: %s to %s", self.name, new)
     old = self.name
     self.name = new
     self.df.rename(
       columns={ old: new },
       inplace=True
     )
+    
+    # self.pivots = [p]
 
 
   def translate_pivots_root(self, ctx, current, translation):

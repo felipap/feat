@@ -78,24 +78,85 @@ register_function('Get', 'GET', call_get, num_args=1, takes_pivots=True)
 
 #
 
-def call_meandiff(ctx, name, args, pivots):
+def call_meandiff_slow(ctx, name, args, pivots):
   child = args[0]
   time_col = args[1].name
 
-  # print("groupby is", groupby)
+
+def save_state(**kwargs):
+  import pickle
+  from os import path
+  basepath = '/Users/felipe/dev/oracle/brain/src/jobs'
+  filepath = path.abspath(path.join(basepath, "state.pickle"))
+  print("SAVING STATE", kwargs.keys(), "to", filepath)
+  pickle.dump(kwargs, open(filepath, "wb"))
+
+def call_meandiff(ctx, name, args, pivots):
+  # save_state(ctx=ctx, name=name, args=args, pivots=pivots)
+  child = args[0]
+  time_col = args[1].name
+  
   if pivots:
-    print("pivots is", pivots)
+    print("!! pivots is", pivots)
     groupby = pivots
     for pivot in pivots:
       assert pivot in child.get_pivots()
   else:
     groupby = child.get_pivots()
 
+  ########################################################
+  ########################################################
+  ########################################################
+
+  df = child.get_stripped()
+  df.rename(columns={ child.name: name }, inplace=True)
+
+  subtracted = df.copy()
+  subtracted[time_col] -= 1
+
+  df[name] = df[name] - subtracted[name]
+
+  result = ctx.create_subframe(name, groupby)
+  result.fill_data(df, -100000)
+  return result
+
+  ########################################################
+  ########################################################
+  ########################################################
+
   groupbyMinusTime = list(set(groupby)-{time_col})
 
   df = child.get_stripped()
+  df = df[df.customer=='5b69c4280998ba2b42deb32c']
+  print("df", df.columns)
+
   if groupbyMinusTime:
-    childMean = df.groupby(groupbyMinusTime).agg({ child.name: ['mean'] })
+    
+    childMean = df.copy()
+    childMean['mean'] = -1
+    date_counts = sorted(ctx.get_date_range())
+    for date in date_counts:
+      print("date", date)
+      # childMean.loc[childMean[time_col]==date,'mean'] =
+      mean = df[df[time_col]<date].groupby(groupbyMinusTime).agg({ child.name: ['mean'] })
+      print("calc", mean)
+      # print(calc)
+    
+    print("ahhhhh\n\n\n", childMean)
+
+    # acc = original.copy()
+    # acc.set_index(pivots, inplace=True)
+    
+    # leaf = original.copy()
+    # date_counts = sorted(ctx.get_date_range())
+    # for date in date_counts:
+    #   print("date", date)
+    #   leaf[time_col] += 1
+    #   leaf = leaf[leaf[time_col]<date_counts[-1]]
+    #   # acc = leaf.set_index(pivots).add(acc, fill_value=0)
+    #   # Dates may only be those in date_counts.
+
+    # # For debugging purposes. Must be done while acc is indexed.
     # IDEA dynamically execute Mean() here to do this work?
     childMean.columns = ['__averaged__']
     childMean.reset_index(inplace=True)
@@ -119,12 +180,6 @@ def call_meandiff(ctx, name, args, pivots):
 
   result = ctx.create_subframe(name, groupby)
   result.fill_data(grouped)
-
-  # agg.columns = [name]
-  # agg[name] = agg[name].astype(np.float64)
-  # grouped = grouped[list(set([name, ctx.timeCol])|set(groupby))]
-  #
-  # agg.reset_index(inplace=True)
   return result
 
 register_function('MeanDiff', 'MEAN_DIFF', call_meandiff, num_args=2, takes_pivots=True)
@@ -240,7 +295,7 @@ def call_sum(ctx, name, args, pivots):
   agg.reset_index(inplace=True)
   agg[name] = agg[name].astype(np.float64) # REVIEW type cast
   result = ctx.create_subframe(name, pivots)
-  result.fill_data(agg)
+  result.fill_data(agg, fillnan=0)
   return result
 
 register_function('Sum', 'SUM', call_sum, num_args=1, takes_pivots=True)
@@ -283,7 +338,7 @@ def call_accumulate(ctx, name, args):
   acc.drop('__original__', axis=1, inplace=True)
 
   result = ctx.create_subframe(name, pivots)
-  result.fill_data(acc)
+  result.fill_data(acc, fillnan=0)
   return result
 
 register_function('Accumulate', 'ACC', call_accumulate, num_args=1, takes_pivots=False)

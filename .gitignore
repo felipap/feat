@@ -1,10 +1,11 @@
 .vscode
 **/venv
 .ipynb_checkpoints
-tests/
+old_tests/
 build/
 dist/
 
+*.pickle
 
 __pycache__
 testdata
