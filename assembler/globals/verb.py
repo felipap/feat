@@ -115,21 +115,36 @@ def JSON_GET_FLEXPLAN(ctx, name, args):
       resumed_cmonth = date_to_cmonth(resumed)
     
     # print(row['CMONTH(date)'], started_cmonth)
-    if row['CMONTH(date)'] <= started_cmonth:
+    if row['CMONTH(date)'] < started_cmonth:
       return None
     
     current_value = eval("row['__parsed__']%s" % field)
-    return current_value
+    # return current_value
     
     if paused_cmonth:
-      if row['CMONTH(date)'] <= paused_cmonth:
-        return current_value
-    
-      if resumed_cmonth:
-        if row['CMONTH(date)'] >= resumed_cmonth:
+      if not resumed_cmonth:
+        if row['CMONTH(date)'] >= paused_cmonth:
+          return None
+        else:
           return current_value
-    
-    return None
+      else:
+        if paused_cmonth < resumed_cmonth:
+          if row['CMONTH(date)'] < paused_cmonth:
+            return current_value
+          elif row['CMONTH(date)'] <= resumed_cmonth:
+            return current_value
+          else:
+            return None
+        else:
+          # QUESTION it's paused now then?
+          return False
+      
+      #   if resumed_cmonth:
+      #     print("resumed", started_cmonth, paused_cmonth, resumed_cmonth)
+      #     if row['CMONTH(date)'] >= resumed_cmonth:
+      #       return current_value
+    else:
+      return current_value
     # try:
     #   # FIXME stranger danger!?
     # except:
