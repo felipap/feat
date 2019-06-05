@@ -10,6 +10,8 @@ import pandas as pd
 
 fns = {}
 def register_function(name, keyword, call, **kwargs):
+  if keyword in fns:
+    raise Exception()
   fns[keyword] = dict(
     name=name,
     keyword=keyword,
@@ -18,6 +20,8 @@ def register_function(name, keyword, call, **kwargs):
     num_args=kwargs.get('num_args', 1),
   )
 
+from .verb import JSON_GET
+register_function('JSON_GET',  'JSON_GET', JSON_GET, num_args=2)
 
 def getFunction(name):
   return fns.get(name)
