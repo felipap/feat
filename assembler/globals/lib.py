@@ -29,5 +29,6 @@ def fancy_apply(df, function, **kwargs):
     print("\nError using .apply(). row=%s" % count, e)
     raise Exception(e)
   
+  print("\r<%s> done: %d%%" % (function.__name__, 100))
   print("\nFunction took: %s seconds" % round(timer() - start, 2))
   return result

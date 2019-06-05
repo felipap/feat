@@ -170,7 +170,7 @@ def assemble_column(ctx, tree):
     # triggered the `tree['name'] in ctx.df.columns` check above.
     raise Exception()
 
-  ctx.merge_frame_with_df(childResult, left_on=keyOut, right_on=keyIn)
+  copied = ctx.merge_frame_with_df(childResult, left_on=keyOut, right_on=keyIn)
 
   # If we don't drop the right_on key, it will stick to the merged dataframe, so
   # trying to use the same relationship again might throw a column overlap
@@ -181,6 +181,7 @@ def assemble_column(ctx, tree):
 
   # print("end result is", ctx.df.columns, childResult, "\n\n")
 
-  result = ctx.create_subframe(tree['name'], ctx.get_pivots_for_table(ctx.current))
+  # result = ctx.create_subframe(tree['name'], ctx.get_pivots_for_table(ctx.current))
+  result = ctx.create_subframe(tree['name'], copied.pivots)
   result.fill_data(ctx.df)
   return result

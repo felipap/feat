@@ -52,8 +52,8 @@ shape = {
       # "EMAIL_DOMAIN(customer.email)",
       # "EMAIL_DOMAIN_EXT(customer.email)",
       # "JSON_GET(customer.shipping_address,\"['state']\")",
-      "FWD(JSON_GET_FLEXPLAN(customer.flex_plans,\"[0]['rushed']\"),1,CMONTH(date))",
-      "FWD(JSON_GET_FLEXPLAN(customer.flex_plans,\"[0]['items'][0]['id']\"),1,CMONTH(date))",
+      "JSON_GET_FLEXPLAN(customer.flex_plans,\"[0]['shippingAddress']['state']\")",
+      "JSON_GET_FLEXPLAN(customer.flex_plans,\"[0]['rushed']\")",
       # "FWD(JSON_GET_FLEXPLAN(customer.flex_plans,\"[0]['items'][0]['id']\"),1,CMONTH(date))",
       # "JSON_GET(customer.flex_plans,\"[0]['shippingAddress']['state']\")",
       # """JSON_GET(customer.flex_plans,"[0]['items'][0]['id']")""",
@@ -83,7 +83,8 @@ shape = {
     },
 }
 
-users = dataframes['Users']
+dataframes['Users'] = dataframes['Users'].iloc[:100]
+# users = users.iloc[:100]
 
 result = assembler.assemble(shape, type_config, dataframes)
 pickle.dump(result, open('delete.pickle', 'wb'))

@@ -96,12 +96,10 @@ class Context(object):
     # self.cached_frames[frame.name] = self.graph.pivots[self.current]
     copied = frame.copy()
     copied.pivots = outer_pivots
-    print("copying too", frame.fillnan, copied.fillnan)
+    print("copying too", frame.name, outer_pivots)
     self.cached_frames[frame.name] = copied
 
-    # copied = frame.copy()
-    # copied.fill_data(self.df)
-    # return copied
+    return copied
 
   def findGraphEdge(self, tableOut=None, colOut=None, tableIn=None, colIn=None):
     return self.graph.find_edge(tableOut, colOut, tableIn, colIn)

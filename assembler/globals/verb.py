@@ -76,14 +76,13 @@ def JSON_GET_FLEXPLAN(ctx, name, args):
   df[name] = df[name].str.replace(': False', ': false')
   
   # HACK it's wrong that we even have to do this!
-  cmonths = None
-  if not 'CMONTH(date)' in df.columns:
+  if 'CMONTH(date)' in df.columns:
     raise Exception()
 
+  cmonths = ctx.get_date_range()
   # Contract
-  cmonths = df['CMONTH(date)'].unique()
-  df.drop('CMONTH(date)', axis=1, inplace=True)
-  df.drop_duplicates(inplace=True)
+  # df.drop('CMONTH(date)', axis=1, inplace=True)
+  # df.drop_duplicates(inplace=True)
 
   def parse_json(row):
     if not row[name] or row[name] == '[]':
@@ -118,8 +117,12 @@ def JSON_GET_FLEXPLAN(ctx, name, args):
     if row['CMONTH(date)'] < started_cmonth:
       return None
     
-    current_value = eval("row['__parsed__']%s" % field)
-    # return current_value
+    try:
+      current_value = eval("row['__parsed__']%s" % field)
+      # print("Not failed")
+    except Exception as e:
+      # print("Failed!", e, row, row['__parsed__'][0].keys())
+      current_value = None
     
     if paused_cmonth:
       if not resumed_cmonth:
@@ -138,20 +141,15 @@ def JSON_GET_FLEXPLAN(ctx, name, args):
         else:
           # QUESTION it's paused now then?
           return False
-      
-      #   if resumed_cmonth:
-      #     print("resumed", started_cmonth, paused_cmonth, resumed_cmonth)
-      #     if row['CMONTH(date)'] >= resumed_cmonth:
-      #       return current_value
     else:
       return current_value
-    # try:
-    #   # FIXME stranger danger!?
-    # except:
-    #   return None
   df[name] = fancy_apply(df, get_field, axis=1)
+
+  # TODO make sure the result of get_field is a primitive type (eg. ints,
+  # strings, bool). The program will break if it's a list etc.
  
-  result = ctx.create_subframe(name, child.pivots)
+  pivots = list(set([*child.pivots, 'CMONTH(date)']))
+  result = ctx.create_subframe(name, pivots)
   result.fill_data(df, fillnan=0)
   return result
 
