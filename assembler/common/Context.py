@@ -80,12 +80,26 @@ class Context(object):
         suffixes=(False, False))
     else:
       copied_frame = frame.copy()
-      outer_pivots = [left_on]
       copied_frame.rename_pivot(right_on, '__JOIN__')
+
+      copied_frame_df = copied_frame.get_stripped()
+
+      columns_overlap = set(copied_frame_df.columns).intersection(self.df.columns)
+      right_on = '__JOIN__'
+
+      outer_pivots = [left_on]
+      if columns_overlap:
+        assert len(columns_overlap) == 1 # Just for debugging now, this should be deleted!
+        overlap = columns_overlap.pop()
+        outer_pivots += [overlap]
+        right_on = [right_on, overlap]
+        left_on = [left_on, overlap]
+
+      
       self.df = pd.merge(self.df, \
-        copied_frame.get_stripped(), \
+        copied_frame_df, \
         left_on=left_on, \
-        right_on='__JOIN__', \
+        right_on=right_on, \
         how='left', \
         suffixes=(False, False))
       self.df.drop('__JOIN__', axis=1, inplace=True)
