@@ -104,8 +104,8 @@ register_function('GreaterThan', 'GREATERTHAN', call_greaterthan, num_args=2)
 
 def call_fwd(ctx, name, args, pivots):
   lag = args[1]
-  time_col = args[2].name
   child = args[0]
+  time_col = 'CMONTH(date)'
 
   shifted = child.get_stripped()
   shifted.rename(columns={ child.name: name }, inplace=True)
@@ -117,13 +117,13 @@ def call_fwd(ctx, name, args, pivots):
   # If pivots isn't supplied, use child's pivots instead.
   if pivots is None:
     pivots = child.pivots
-  result = ctx.create_subframe(name, pivots)
   
+  result = ctx.create_subframe(name, pivots)
   print("It is: ", child.fillnan)
   result.fill_data(shifted, child.fillnan)
   return result
 
-register_function('Forward', 'FWD', call_fwd, num_args=3, takes_pivots=True)
+register_function('Forward', 'FWD', call_fwd, num_args=2, takes_pivots=True)
 
 #f
 
