@@ -123,25 +123,25 @@ def assemble_column(ctx, tree):
   assert 'next' in tree, "Non-terminal notes must have a child"
 
   if tree.get('root'):
-    oldCurrent = ctx.swapIn(tree['root'])
-    childResult = assemble_column(ctx, tree['next'])
-    ctx.swapIn(oldCurrent)
+    prev_current = ctx.swapIn(tree['root'])
+    child = assemble_column(ctx, tree['next'])
+    ctx.swapIn(prev_current)
 
     mapping = tree.get('translation', {}).get('map_str')
-    childResult.translate_pivots_root(ctx, ctx.current, mapping)
-    childResult.rename(tree['name'])
+    child.translate_pivots_root(ctx, ctx.current, mapping)
+    child.rename(tree['name'])
 
     # IMPORTANT:
-    # merge_frame_with_df will return an expanded version of childResult, with
-    # combinations of pivots that might not be in the original childResult, which
-    # will be fillna() with childResult.fillnan. We *SHOULD* return this expanded
+    # merge_frame_with_df will return an expanded version of child, with
+    # combinations of pivots that might not be in the original child, which
+    # will be fillna() with child.fillnan. We *SHOULD* return this expanded
     # version, but that might be too expensive. For that reason we should do
     # `result.fill_data(shifted, child.fillnan)` in functions inside all.py, so
     # that fillnan information won't get lost!
     
-    # return ctx.merge_frame_with_df(childResult, on=list(childResult.pivots))
-    ctx.merge_frame_with_df(childResult, on=list(childResult.pivots))
-    return childResult
+    # return ctx.merge_frame_with_df(child, on=list(child.pivots))
+    ctx.merge_frame_with_df(child, on=list(child.pivots))
+    return child
 
   # Handle the implicit 1-to-1 join.
   # Pure tables can't have dots in their column names, so being here means that
@@ -149,37 +149,41 @@ def assemble_column(ctx, tree):
   # is a relationship endpoint from the Sales to the Items table. In this case,
   # tree['this'] == 'item', and tree['next'] points to the tree for 'price'.
 
-  tableOut = ctx.current
-  keyOut = tree['this']
+  table_out = ctx.current
+  key_out = tree['this']
 
   # Find table and key to join into from context.
-  rel = ctx.findGraphEdge(tableOut=tableOut, colOut=keyOut)
+  rel = ctx.findGraphEdge(tableOut=table_out, colOut=key_out)
   if not rel:
-    raise Exception('Relationship at %s.%s not found' % (tableOut, keyOut))
+    raise Exception('Relationship at %s.%s not found' % (table_out, key_out))
   [_, _, tableIn, keyIn] = rel[0]
 
   # Execute child with context of tableIn.
   ctx.swapIn(tableIn)
-  childResult = assemble_column(ctx, tree['next'])
-  ctx.swapIn(tableOut)
+  child = assemble_column(ctx, tree['next'])
+  ctx.swapIn(table_out)
 
-  childResult.rename(tree['name'])
+  child.rename(tree['name'])
 
-  if ctx.currHasColumn(childResult.name):
+  if ctx.currHasColumn(child.name):
     # Not expected, as the condition of it already being in columns should've
     # triggered the `tree['name'] in ctx.df.columns` check above.
     raise Exception()
 
-  copied = ctx.merge_frame_with_df(childResult, left_on=keyOut, right_on=keyIn)
+  copied = ctx.merge_frame_with_df(
+    child,
+    left_on=key_out,
+    right_on=keyIn,
+  )
 
   # If we don't drop the right_on key, it will stick to the merged dataframe, so
   # trying to use the same relationship again might throw a column overlap
   # error. For instance, if we expand first `items.category.type` and then
   # `items.category.sub_type`, unless we explicitly drop `items.id` (ie keyIn)
   # below, Pandas will throw an error.
-  # print("Result", ctx.df.columns, childResult.get_stripped().columns)
+  # print("Result", ctx.df.columns, child.get_stripped().columns)
 
-  # print("end result is", ctx.df.columns, childResult, "\n\n")
+  # print("end result is", ctx.df.columns, child, "\n\n")
 
   # result = ctx.create_subframe(tree['name'], ctx.get_pivots_for_table(ctx.current))
   result = ctx.create_subframe(tree['name'], copied.pivots)

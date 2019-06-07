@@ -108,9 +108,12 @@ def assemble(shape, type_config, dataframes):
   dataframes['Output'] = init_output_frame(dataframes, shape['output'], shape['date_range'])
 
   for (type_name, config) in type_config.items():
-    if dataframes[caseword(type_name)].duplicated(config['pivots']).shape[0]:
-      print("Dropping duplicates!!", dataframes[caseword(type_name)].shape)
-      dataframes[caseword(type_name)] = dataframes[caseword(type_name)].drop_duplicates(config['pivots'])
+    df = dataframes[caseword(type_name)]
+    if not set(config['pivots']).issubset(df.columns):
+      raise Exception('Expected pivots (%s) for df %s' % (config['pivots'], type_name))
+    if df.duplicated(config['pivots']).shape[0]:
+      print("Dropping duplicates!!", df.shape)
+      dataframes[caseword(type_name)] = df.drop_duplicates(config['pivots'])
 
   context = Context(dataframes, 'Output', shape['output']['date_block'])
 
@@ -161,9 +164,9 @@ def assemble(shape, type_config, dataframes):
 
   to_return = context.df[list(shape['output']['pivots']) + generated_columns]
 
-  # for col in to_return.columns:
-  #   if to_return[col].isna().any():
-  #     print("Column %s has empty" % col, to_return[col].unique())
+  for col in to_return.columns:
+    if to_return[col].isna().any():
+      print("Column %s has NaN items" % col, to_return[col].unique())
   # print('assembler is done\n\n\n')
 
   return to_return

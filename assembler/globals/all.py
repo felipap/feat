@@ -4,6 +4,7 @@ from dateutil import relativedelta
 import time
 
 from ..lib.gen_cartesian import gen_cartesian
+from .lib import can_collapse_date
 
 import numpy as np
 import pandas as pd
@@ -266,18 +267,25 @@ def call_cmonth(ctx, name, args):
 
   # print('date is', child.get_stripped().columns, name, child.name)
 
+  df = child.get_stripped()
+
+  pivots = child.get_pivots()
+  if 'CMONTH(date)' in pivots:
+    assert can_collapse_date(child, 'CMONTH(date)')
+    df = df.drop('CMONTH(date)', axis=1).drop_duplicates()
+    pivots.remove('CMONTH(date)')
+
   # assert child.name.endswith('date') # in child.get_stripped().columns
-  assert child.get_stripped()[child.name].dtype == np.dtype('datetime64[ns]')
+  assert df[child.name].dtype == np.dtype('datetime64[ns]')
 
   def apply(row):
     # print("child.name", child.name, row[child.name])
     # return datetime.strptime(row[child.name], '%Y-%m-%dT%H:%M:%S.%f')
     value = row[child.name] # datetime.strptime(row['date'], '%Y-%m-%d')
     return int((value.year - 1970)*12+value.month)
-  df = child.get_stripped()
   df[name] = df.apply(apply, axis=1)
 
-  result = ctx.create_subframe(name, child.get_pivots())
+  result = ctx.create_subframe(name, pivots)
   result.fill_data(df)
   return result
 
