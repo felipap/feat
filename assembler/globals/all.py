@@ -140,111 +140,50 @@ register_function('Get', 'GET', call_get, num_args=1, takes_pivots=True)
 
 #
 
-def call_meandiff_slow(ctx, name, args, pivots):
+def call_minusprev(ctx, name, args, pivots):
   child = args[0]
-  time_col = args[1].name
-
-
-def save_state(**kwargs):
-  import pickle
-  from os import path
-  basepath = '/Users/felipe/dev/oracle/brain/src/jobs'
-  filepath = path.abspath(path.join(basepath, "state.pickle"))
-  print("SAVING STATE", kwargs.keys(), "to", filepath)
-  pickle.dump(kwargs, open(filepath, "wb"))
-
-def call_meandiff(ctx, name, args, pivots):
-  # save_state(ctx=ctx, name=name, args=args, pivots=pivots)
-  child = args[0]
-  time_col = args[1].name
+  time_col = 'CMONTH(date)'
   
   if pivots:
-    print("!! pivots is", pivots)
-    groupby = pivots
-    for pivot in pivots:
-      assert pivot in child.get_pivots()
+    raise NotImplementedError()
+    # groupby = pivots
+    # for pivot in pivots:
+    #   assert pivot in child.get_pivots()
   else:
-    groupby = child.get_pivots()
-
-  ########################################################
-  ########################################################
-  ########################################################
+    pivots = child.get_pivots()
 
   df = child.get_stripped()
   df.rename(columns={ child.name: name }, inplace=True)
 
+  # df = df[df['customer']=='5b69c4280998ba2b42deb32c']
   subtracted = df.copy()
-  subtracted[time_col] -= 1
+  subtracted[time_col] += 1
 
-  df[name] = df[name] - subtracted[name]
+  subtracted.set_index(child.get_pivots(), inplace=True)
+  df.set_index(child.get_pivots(), inplace=True)
 
-  result = ctx.create_subframe(name, groupby)
-  result.fill_data(df, -100000)
+  df.fillna(value={ name: 0 }, inplace=True)
+
+  subtracted.fillna(value={ name: 0 }, inplace=True)
+  
+  # Just using .subtract() will get rid of negative values, unless we
+  # expand df to have all (consumer,cmonth) combinations in both df and
+  # subtracted.
+
+  a = df.drop(name, axis=1)
+  a['__key__'] = 1
+  b = subtracted.drop(name, axis=1)
+  b['__key__'] = 1
+  expanded = pd.merge(a.reset_index(),b.reset_index(), how='outer')
+  expanded.drop('__key__', axis=1, inplace=True)
+
+  df = pd.merge(expanded, df[name].subtract(subtracted[name], fill_value=0), on=child.get_pivots())
+
+  result = ctx.create_subframe(name, pivots)
+  result.fill_data(df, 0)
   return result
 
-  ########################################################
-  ########################################################
-  ########################################################
-
-  groupbyMinusTime = list(set(groupby)-{time_col})
-
-  df = child.get_stripped()
-  df = df[df.customer=='5b69c4280998ba2b42deb32c']
-  print("df", df.columns)
-
-  if groupbyMinusTime:
-    
-    childMean = df.copy()
-    childMean['mean'] = -1
-    date_counts = sorted(ctx.get_date_range())
-    for date in date_counts:
-      print("date", date)
-      # childMean.loc[childMean[time_col]==date,'mean'] =
-      mean = df[df[time_col]<date].groupby(groupbyMinusTime).agg({ child.name: ['mean'] })
-      print("calc", mean)
-      # print(calc)
-    
-    print("ahhhhh\n\n\n", childMean)
-
-    # acc = original.copy()
-    # acc.set_index(pivots, inplace=True)
-    
-    # leaf = original.copy()
-    # date_counts = sorted(ctx.get_date_range())
-    # for date in date_counts:
-    #   print("date", date)
-    #   leaf[time_col] += 1
-    #   leaf = leaf[leaf[time_col]<date_counts[-1]]
-    #   # acc = leaf.set_index(pivots).add(acc, fill_value=0)
-    #   # Dates may only be those in date_counts.
-
-    # # For debugging purposes. Must be done while acc is indexed.
-    # IDEA dynamically execute Mean() here to do this work?
-    childMean.columns = ['__averaged__']
-    childMean.reset_index(inplace=True)
-
-    grouped = pd.merge(ctx.df, \
-      childMean, \
-      on=groupbyMinusTime, \
-      how='left', \
-      suffixes=(False, False))
-  else:
-    # When groupbyMinusTime is empty, that means the average we want is over the
-    # entire dataframe. (df.groupby just doesn't support an empty list).
-    grouped = ctx.df.copy()
-    grouped['__averaged__'] = grouped[child.name].mean()
-
-  # grouped.drop_duplicates(child['groupby'], inplace=True)
-
-  assert child.name in grouped.columns
-
-  grouped[name] = (grouped[child.name] - grouped['__averaged__']) / grouped['__averaged__']
-
-  result = ctx.create_subframe(name, groupby)
-  result.fill_data(grouped)
-  return result
-
-register_function('MeanDiff', 'MEAN_DIFF', call_meandiff, num_args=2, takes_pivots=True)
+register_function('MinusPrev', 'MINUSPREV', call_minusprev, num_args=1, takes_pivots=True)
 
 #
 
@@ -275,7 +214,6 @@ def call_cmonth(ctx, name, args):
     df = df.drop('CMONTH(date)', axis=1).drop_duplicates()
     pivots.remove('CMONTH(date)')
 
-  # assert child.name.endswith('date') # in child.get_stripped().columns
   assert df[child.name].dtype == np.dtype('datetime64[ns]')
 
   def apply(row):

@@ -5,39 +5,24 @@ import pickle
 import pandas as pd
 from timeit import default_timer as timer
 
-sys.path.append('/Users/felipe/dev') # Make sure to pip3 install -e ~/dev/assembler
+# Make sure to `pip3 install -e` the folder of these projects?
+sys.path.append('/Users/felipe/dev')
 import assembler
 sys.path.append('/Users/felipe/dev/settler2')
-from brain.src.lib.data import fetch_namespace_collections
-from brain.src.live import VERB_make_live_users
+from brain.src.live import load_namespace
 
-if False:
-  loop = asyncio.get_event_loop()
-  dataframes = loop.run_until_complete(fetch_namespace_collections('verb'))
-  pickle.dump(dataframes, open('dataframes.pickle', 'wb'))
+start = timer()
+loop = asyncio.get_event_loop()
+dataframes = loop.run_until_complete(load_namespace('verb', range(576, 593)))
+print("elapsed: %ds" % (timer() - start))
+pickle.dump(dataframes, open('dataframes.pickle', 'wb'))
 dataframes = pickle.load(open('dataframes.pickle', 'rb'))
-
-
-date_range = range(576, 593)
-
-# dataframes['Users'] = dataframes['Users'].iloc[:1000]
-
-# start = timer()
-# Users = VERB_make_live_users(dataframes['Users'], date_range)
-# pickle.dump(Users, open('Users.pickle', 'wb'))
-# print("elapsed: %ds" % (timer() - start))
-Users = pickle.load(open('Users.pickle', 'rb'))
-
-dataframes['Users'] = Users
 
 type_config = {
   'users': {
     'pivots': ['id', 'CMONTH(date)'],
     'column_cast': {
-      'status': 'str',
-      'unread': 'str',
       'created': 'datetime64[ns]',
-      'customer_type': 'str',
     },
   },
   'orders': {
@@ -64,7 +49,9 @@ type_config = {
 shape = {
     'date_range': ['2017-12', '2019-5'],
     'features': [
-      "DOMAIN_EXT(EMAIL_DOMAIN(customer.email))",
+      # "customer.school_delivery",
+      "MINUSPREV(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer))"
+      # "DOMAIN_EXT(EMAIL_DOMAIN(customer.email))",
       # "JSON_GET(customer.flex_plans,\"['shippingAddress']['state']\")",
       # "JSON_GET(customer.shipping_address,\"['state']\")",
       # "JSON_GET_FLEXPLAN(customer.flex_plans,\"['shippingAddress']['state']\")",
@@ -81,10 +68,10 @@ shape = {
       # """FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),1,CMONTH(date))""",
       # """FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),2,CMONTH(date))""",
       # """FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),3,CMONTH(date))""",
-      """
-      FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.
-        TSINCESEEN(CMONTH(order.date),CMONTH(order.date)|order.customer,CMONTH(order.date))
-        ,1,CMONTH(date))""",
+      # """
+      # FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.
+      #   TSINCESEEN(CMONTH(order.date),CMONTH(order.date)|order.customer,CMONTH(order.date))
+      #   ,1,CMONTH(date))""",
       # """
       # FWD(
       #   MEAN_DIFF(
@@ -100,17 +87,11 @@ shape = {
     },
 }
 
-
 result = assembler.assemble(shape, type_config, dataframes)
 pickle.dump(result, open('/Users/felipe/delete.pickle', 'wb'))
 result = pickle.load(open('/Users/felipe/delete.pickle', 'rb'))
 
 result.fillna(0, inplace=True)
 
-tsince = 'FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.TSINCESEEN(CMONTH(order.date),CMONTH(order.date)|order.customer,CMONTH(order.date)),1,CMONTH(date))'
-print(result[(result[tsince]==0)&(result['CMONTH(date)']==591)].shape)
-
-
-print(result[state_col].unique())
 
 result

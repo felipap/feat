@@ -100,6 +100,23 @@ def init_output_frame(dataframes, output_config, date_range):
 
   return Output
 
+def encode_cmonth(date_code):
+  year, month = map(int, date_code.split('-'))
+  foo = (year-1970)*12+month
+  print(date_code, foo)
+  return foo
+
+def decode_cmonth(cmonth):
+  base_date = datetime(1970,1,1)
+  date = base_date + relativedelta(months=cmonth-1)
+  return '%d-%02d' % (date.year, date.month) # TODO use 
+
+  result = []
+  for cmonth in cmonths:
+    date = base_date + relativedelta(months=cmonth-1)
+    result.append()
+    print("cmonth %s is %s" % (cmonth, result[-1]))
+  return result
 
 def caseword(word):
   return word[0].upper()+word[1:]
@@ -168,5 +185,9 @@ def assemble(shape, type_config, dataframes):
     if to_return[col].isna().any():
       print("Column %s has NaN items" % col, to_return[col].unique())
   # print('assembler is done\n\n\n')
+
+  mapping = { c:decode_cmonth(c) for c in range(576, 594) }
+  print("map is", mapping)
+  to_return['CMONTH(date)'] = to_return['CMONTH(date)'].replace(mapping)
 
   return to_return
