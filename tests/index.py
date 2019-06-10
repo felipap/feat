@@ -11,11 +11,11 @@ import assembler
 sys.path.append('/Users/felipe/dev/settler2')
 from brain.src.live import load_namespace
 
-start = timer()
-loop = asyncio.get_event_loop()
-dataframes = loop.run_until_complete(load_namespace('verb', range(576, 593)))
-print("elapsed: %ds" % (timer() - start))
-pickle.dump(dataframes, open('dataframes.pickle', 'wb'))
+# start = timer()
+# loop = asyncio.get_event_loop()
+# dataframes = loop.run_until_complete(load_namespace('verb', range(576, 593)))
+# print("elapsed: %ds" % (timer() - start))
+# pickle.dump(dataframes, open('dataframes.pickle', 'wb'))
 dataframes = pickle.load(open('dataframes.pickle', 'rb'))
 
 type_config = {
@@ -49,36 +49,32 @@ type_config = {
 shape = {
     'date_range': ['2017-12', '2019-5'],
     'features': [
-      # "customer.school_delivery",
-      "MINUSPREV(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer))"
-      # "DOMAIN_EXT(EMAIL_DOMAIN(customer.email))",
-      # "JSON_GET(customer.flex_plans,\"['shippingAddress']['state']\")",
-      # "JSON_GET(customer.shipping_address,\"['state']\")",
-      # "JSON_GET_FLEXPLAN(customer.flex_plans,\"['shippingAddress']['state']\")",
-      # "TIME_SINCE(CMONTH(Users{customer=id}.created))",
-      # "EMAIL_DOMAIN(customer.email)",
-      # "JSON_GET(customer.shipping_address,\"['state']\")",
-      # "JSON_GET_FLEXPLAN(customer.flex_plans,\"['rushed']\")",
-      # "FWD(JSON_GET_FLEXPLAN(customer.flex_plans,\"['items'][0]['id']\"),1,CMONTH(date))",
-      # "JSON_GET(customer.flex_plans,\"['shippingAddress']['state']\")",
-      # """JSON_GET(customer.flex_plans,"[0]['items'][0]['id']")""",
-      # """PARSE_FLEX_PLANS(customer.flex_plans)""",
-      # """GREATERTHAN(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),0)""",
-      # "FWD(      ACC(        Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}          .SUM(quantity|order.customer,CMONTH(order.date))        ),1,CMONTH(date))""",
-      # """FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),1,CMONTH(date))""",
-      # """FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),2,CMONTH(date))""",
-      # """FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),3,CMONTH(date))""",
-      # """
-      # FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.
-      #   TSINCESEEN(CMONTH(order.date),CMONTH(order.date)|order.customer,CMONTH(order.date))
-      #   ,1,CMONTH(date))""",
-      # """
-      # FWD(
-      #   MEAN_DIFF(
-      #     Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.
-      #       SUM(quantity|CMONTH(order.date),order.customer),CMONTH(date)
-      #     ),1,CMONTH(date))""",
-      # """TIME_SINCE(CMONTH(Users{customer=id}.created))""",
+    "GREATERTHAN(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),0)",
+
+    #"ACC(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(total_price|order.customer,CMONTH(order.date)))",
+
+    "MINUSPREV(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer))",
+    "JSON_GET(customer.shipping_address,\"['state']\")",
+    "customer.school_delivery",
+    "JSON_GET(customer.flex_plans,\"['items'][0]['id']\")",
+    "TIME_SINCE(CMONTH(Users{customer=id}.created))",
+    
+    #"EMAIL_DOMAIN(customer.email)",
+    "DOMAIN_EXT(EMAIL_DOMAIN(customer.email))",
+            
+    #Previously acc-ed !!! For some reason without FWD is being hard to train1
+    "ACC(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|order.customer,CMONTH(order.date)))",
+    "FWD(ACC(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|order.customer,CMONTH(order.date))),1)",
+    
+    #Order sums (this and prev months)
+    "Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer)",
+    "FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),1)",
+    "FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),2)",
+    "FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),3)",
+    
+    #Dcount since last order (prev months)
+    "Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.TSINCESEEN(CMONTH(order.date),CMONTH(order.date)|order.customer,CMONTH(order.date))",
+    ##"FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.TSINCESEEN(CMONTH(order.date),CMONTH(order.date)|order.customer,CMONTH(order.date)),1)",
     ],
     "output": {
       'date_block': 'CMONTH(date)',
@@ -92,6 +88,5 @@ pickle.dump(result, open('/Users/felipe/delete.pickle', 'wb'))
 result = pickle.load(open('/Users/felipe/delete.pickle', 'rb'))
 
 result.fillna(0, inplace=True)
-
 
 result

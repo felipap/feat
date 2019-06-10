@@ -5,6 +5,7 @@ import time
 
 from ..lib.gen_cartesian import gen_cartesian
 from .lib import can_collapse_date
+from ..lib.cmonth import date_to_cmonth
 
 import numpy as np
 import pandas as pd
@@ -150,7 +151,7 @@ def call_minusprev(ctx, name, args, pivots):
     # for pivot in pivots:
     #   assert pivot in child.get_pivots()
   else:
-    pivots = child.get_pivots()
+    child_pivots = list(child.get_pivots())
 
   df = child.get_stripped()
   df.rename(columns={ child.name: name }, inplace=True)
@@ -159,8 +160,8 @@ def call_minusprev(ctx, name, args, pivots):
   subtracted = df.copy()
   subtracted[time_col] += 1
 
-  subtracted.set_index(child.get_pivots(), inplace=True)
-  df.set_index(child.get_pivots(), inplace=True)
+  subtracted.set_index(child_pivots, inplace=True)
+  df.set_index(child_pivots, inplace=True)
 
   df.fillna(value={ name: 0 }, inplace=True)
 
@@ -177,7 +178,9 @@ def call_minusprev(ctx, name, args, pivots):
   expanded = pd.merge(a.reset_index(),b.reset_index(), how='outer')
   expanded.drop('__key__', axis=1, inplace=True)
 
-  df = pd.merge(expanded, df[name].subtract(subtracted[name], fill_value=0), on=child.get_pivots())
+  df = pd.merge(expanded, df[name].subtract(subtracted[name], fill_value=0), on=child_pivots)
+
+  pivots = child_pivots
 
   result = ctx.create_subframe(name, pivots)
   result.fill_data(df, 0)
@@ -219,8 +222,10 @@ def call_cmonth(ctx, name, args):
   def apply(row):
     # print("child.name", child.name, row[child.name])
     # return datetime.strptime(row[child.name], '%Y-%m-%dT%H:%M:%S.%f')
-    value = row[child.name] # datetime.strptime(row['date'], '%Y-%m-%d')
-    return int((value.year - 1970)*12+value.month)
+    return date_to_cmonth(row[child.name])
+
+    # value = row[child.name] # datetime.strptime(row['date'], '%Y-%m-%d')
+    # return int((value.year - 1970)*12+value.month)
   df[name] = df.apply(apply, axis=1)
 
   result = ctx.create_subframe(name, pivots)

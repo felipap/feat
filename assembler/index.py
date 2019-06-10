@@ -11,12 +11,14 @@ from .lib.gen_cartesian import gen_cartesian
 from .assembler import assemble_column
 from .parser import parseLineToCommand
 from .lib.state import save_state
+from .lib.cmonth import date_to_cmonth, cmonth_to_date, date_yearmonth
+
 
 def genMonthCount(start, end):
   curr = start
   while curr < end:
-    print("%s is %s" % (curr, (curr.year - 1970)*12+curr.month))
-    yield (curr.year - 1970)*12+curr.month
+    print("%s is %s" % (curr, date_to_cmonth(curr)))
+    yield date_to_cmonth(curr)
     curr += relativedelta(months=1)
 
 
@@ -43,7 +45,6 @@ def gen_unique_product(colUniqueVals, dataframes):
     if df[column].dtype == np.dtype('datetime64[ns]'):
       continue
     # df[column] = df[column].astype(str) # .astype(np.int64)
-
   return df
 
 
@@ -100,24 +101,6 @@ def init_output_frame(dataframes, output_config, date_range):
 
   return Output
 
-def encode_cmonth(date_code):
-  year, month = map(int, date_code.split('-'))
-  foo = (year-1970)*12+month
-  print(date_code, foo)
-  return foo
-
-def decode_cmonth(cmonth):
-  base_date = datetime(1970,1,1)
-  date = base_date + relativedelta(months=cmonth-1)
-  return '%d-%02d' % (date.year, date.month) # TODO use 
-
-  result = []
-  for cmonth in cmonths:
-    date = base_date + relativedelta(months=cmonth-1)
-    result.append()
-    print("cmonth %s is %s" % (cmonth, result[-1]))
-  return result
-
 def caseword(word):
   return word[0].upper()+word[1:]
 
@@ -171,22 +154,22 @@ def assemble(shape, type_config, dataframes):
     print("elapsed:", end - start)
 
     # Calling assemble_column with context.current set to 'Output' should take
-    # care of merging the assembled columns with the Output dataframe.
+    # care of merging the assembled col umns with the Output dataframe.
     if result.name not in context.globals['Output'].columns:
       raise Exception('Something went wrong')
 
-  # Expose to notebook console
-  import builtins
-  builtins.context = context
-
   to_return = context.df[list(shape['output']['pivots']) + generated_columns]
+
+  # Assert no duplicate features (which might break things later)
+  if sorted(list(set(to_return.columns))) != sorted(to_return.columns):
+    raise Exception("Duplicate features found.")
 
   for col in to_return.columns:
     if to_return[col].isna().any():
-      print("Column %s has NaN items" % col, to_return[col].unique())
+      print("Column %s has NaN items " % col, to_return[col].unique())
   # print('assembler is done\n\n\n')
 
-  mapping = { c:decode_cmonth(c) for c in range(576, 594) }
+  mapping = { c:date_yearmonth(cmonth_to_date(c)) for c in range(576, 594) }
   print("map is", mapping)
   to_return['CMONTH(date)'] = to_return['CMONTH(date)'].replace(mapping)
 

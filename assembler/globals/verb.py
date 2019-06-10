@@ -23,7 +23,6 @@ def JSON_GET(ctx, name, args):
   df.rename(columns={ child.name: name }, inplace=True)
   collapse = can_collapse_date(child, 'CMONTH(date)')
   if collapse:
-    print("Collapsing")
     df = df.drop('CMONTH(date)', axis=1).drop_duplicates()
 
   def parse_json(row):

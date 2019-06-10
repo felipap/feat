@@ -26,7 +26,7 @@ fn_arg:
 groupby: "|" this_column ("," this_column)*
 
 primitive:
-  | NUMBER -> number
+  | SIGNED_NUMBER -> number
   | /[ubf]?r?("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i -> string
 //  | "`" /[^``]*/ "`" -> escaped
 //  | "[" [primitive ("," primitive)*] "]" -> array
@@ -39,7 +39,7 @@ LOWERCASE: /[a-z_]+/
 %import common.ESCAPED_STRING
 %import common.UCASE_LETTER
 %import common.LCASE_LETTER
-%import common.NUMBER
+%import common.SIGNED_NUMBER
 %import common.WS
 %import common.NEWLINE
 %ignore NEWLINE
