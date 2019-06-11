@@ -39,8 +39,8 @@ def JSON_GET(ctx, name, args):
       # FIXME stranger danger!?
       return eval("row['__parsed__']%s" % field)
     except Exception as e:
-      import traceback; traceback.print_exc()
-      print(e, row['__parsed__'], field)
+      # import traceback; traceback.print_exc()
+      print("Failed to get from row", row['__parsed__'], field)
       return None
   df[name] = fancy_apply(df, get_field, axis=1)
  

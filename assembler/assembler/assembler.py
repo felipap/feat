@@ -88,7 +88,6 @@ def fetch_existing_subframe(ctx, tree):
   # REVIEW good idea?
   cached = ctx.get_cached_frame(tree['name'])
   result = ctx.create_subframe(tree['name'], cached.pivots)
-  print("fillnan is", cached.fillnan)
   result.fill_data(ctx.df, cached.fillnan)
   return result
 

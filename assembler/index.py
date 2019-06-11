@@ -17,7 +17,6 @@ from .lib.cmonth import date_to_cmonth, cmonth_to_date, date_yearmonth
 def genMonthCount(start, end):
   curr = start
   while curr < end:
-    print("%s is %s" % (curr, date_to_cmonth(curr)))
     yield date_to_cmonth(curr)
     curr += relativedelta(months=1)
 

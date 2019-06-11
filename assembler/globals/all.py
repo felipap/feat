@@ -124,7 +124,7 @@ def call_fwd(ctx, name, args, pivots):
   result.fill_data(shifted, child.fillnan)
   return result
 
-register_function('Forward', 'FWD', call_fwd, num_args=2, takes_pivots=True)
+register_function('Forward', 'SHIFT', call_fwd, num_args=2, takes_pivots=True)
 
 #f
 
