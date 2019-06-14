@@ -14,6 +14,9 @@ def cmonth_to_date(cmonth):
 def date_yearmonth(date):
   return '%d-%02d' % (date.year, date.month)
 
+def yearmonth_date(ym):
+  return datetime.strptime(ym, '%Y-%m')
+
 # def encode_cmonth(date_code):
 #   year, month = map(int, date_code.split('-'))
 #   foo = (year-1970)*12+month

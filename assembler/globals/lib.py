@@ -9,6 +9,8 @@ from functools import wraps
 import pyjson5
 from pandas.io.json import json_normalize
 
+from ..lib.workarounds import stringify_unhashables
+
 def fancy_apply(df, function, **kwargs):
   total = df.shape[0]
   
@@ -50,7 +52,7 @@ def can_collapse_date(child, datefield):
   # dropna=False so that if field is X for certain cmonths and None for others,
   # collapse will not be allowed.
   # counts = df.groupby(minusdate).nunique(dropna=False)
-  counts = df.groupby(minusdate).nunique(dropna=True)
+  counts = stringify_unhashables(df).groupby(minusdate).nunique(dropna=True)
   counts = counts[[child.name]]
   counts.reset_index(inplace=True)
 

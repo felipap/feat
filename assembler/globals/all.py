@@ -22,9 +22,9 @@ def register_function(name, keyword, call, **kwargs):
     num_args=kwargs.get('num_args', 1),
   )
 
-from .verb import JSON_GET, JSON_GET_FLEXPLAN
+from .verb import JSON_GET, DICT_GET
 register_function('JSON_GET',  'JSON_GET', JSON_GET, num_args=2)
-register_function('JSON_GET_FLEXPLAN',  'JSON_GET_FLEXPLAN', JSON_GET_FLEXPLAN, num_args=2)
+register_function('DICT_GET',  'DICT_GET', DICT_GET, num_args=2)
 from .formatters import EMAIL_DOMAIN, DOMAIN_EXT
 register_function('EMAIL_DOMAIN',  'EMAIL_DOMAIN', EMAIL_DOMAIN, num_args=1)
 register_function('DOMAIN_EXT',  'DOMAIN_EXT', DOMAIN_EXT, num_args=1)

@@ -1,6 +1,8 @@
 import pandas as pd
 import copy
 
+from ..lib.workarounds import drop_hashable_duplicates
+
 class Frame(object):
   """
   """
@@ -52,7 +54,8 @@ class Frame(object):
     #   print("WARNING: frame %s filled with duplicate data" % self)
     # NOTE THIS IS NEW!!!!
     all_columns = list(set([*self.pivots, self.name]))
-    self.df = df.copy()[all_columns].drop_duplicates()
+    
+    self.df = drop_hashable_duplicates(df.copy()[all_columns])
 
 
   def get_stripped(self):
@@ -62,7 +65,7 @@ class Frame(object):
     wantedCols = list(set([self.name]) | set(self.pivots))
     if set(self.df.columns) != set(wantedCols):
       print("THIS SHOULD NOT BE THE CASE.", self.df.columns, wantedCols)
-    return self.df[wantedCols].drop_duplicates().copy()
+    return drop_hashable_duplicates(self.df[wantedCols])
 
 
   def rename_pivot(self, old, new):

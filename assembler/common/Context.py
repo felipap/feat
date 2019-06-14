@@ -110,7 +110,6 @@ class Context(object):
     # self.cached_frames[frame.name] = self.graph.pivots[self.current]
     copied = frame.copy()
     copied.pivots = outer_pivots
-    print("copying too", frame.name, outer_pivots)
     self.cached_frames[frame.name] = copied
 
     return copied

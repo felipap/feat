@@ -11,7 +11,7 @@ from .lib.gen_cartesian import gen_cartesian
 from .assembler import assemble_column
 from .parser import parseLineToCommand
 from .lib.state import save_state
-from .lib.cmonth import date_to_cmonth, cmonth_to_date, date_yearmonth
+from .lib.cmonth import date_to_cmonth, cmonth_to_date, date_yearmonth, yearmonth_date
 
 
 def genMonthCount(start, end):
@@ -73,8 +73,9 @@ def init_output_frame(dataframes, output_config, date_range):
 
   start = datetime.strptime(date_range[0], '%Y-%m')
   end = datetime.strptime(date_range[1], '%Y-%m')
-
   dates = list(genMonthCount(start, end))
+  print("Using date range: %s to %s" % (start, end), dates)
+
   colUniqueVals[output_config['date_block']] = dates
   print("x %s (%s items)" % (output_config['date_block'], len(dates)))
 
@@ -107,12 +108,23 @@ def assemble(shape, type_config, dataframes):
   dataframes['Output'] = init_output_frame(dataframes, shape['output'], shape['date_range'])
 
   for (type_name, config) in type_config.items():
-    df = dataframes[caseword(type_name)]
+    name = caseword(type_name)
+    df = dataframes[name]
+    
+    if 'CMONTH(date)' in config['pivots']:
+      # TODO find a better place to make this transformation
+      uniques = dataframes[name]['CMONTH(date)'].unique()
+      mapping = { unique: date_to_cmonth(yearmonth_date(unique)) for unique in uniques }
+      dataframes[name].replace(mapping, inplace=True)
+    
     if not set(config['pivots']).issubset(df.columns):
-      raise Exception('Expected pivots (%s) for df %s' % (config['pivots'], type_name))
+      raise Exception('Expected pivots (%s) for df %s but found columns [%s].' \
+        % (config['pivots'], type_name, ', '.join(df.columns)))
     if df.duplicated(config['pivots']).shape[0]:
-      print("Dropping duplicates!!", df.shape)
-      dataframes[caseword(type_name)] = df.drop_duplicates(config['pivots'])
+      print("Dropping duplicates in df %s" % type_name, \
+        config['pivots'],
+        df[config['pivots']].shape, df.duplicated(config['pivots']).shape[0])
+      dataframes[name] = df.drop_duplicates(config['pivots'])
 
   context = Context(dataframes, 'Output', shape['output']['date_block'])
 
@@ -138,6 +150,8 @@ def assemble(shape, type_config, dataframes):
 
   ######
 
+  # TODO parse all before starting to assemble one-by-one.
+
   generated_columns = []
   
   for index, feature in enumerate(shape['features']):
@@ -156,6 +170,9 @@ def assemble(shape, type_config, dataframes):
     # care of merging the assembled col umns with the Output dataframe.
     if result.name not in context.globals['Output'].columns:
       raise Exception('Something went wrong')
+  
+  import pickle
+  pickle.dump(context.df, open('/Users/felipe/dev/assembler_df.pickle', 'wb'))
 
   to_return = context.df[list(shape['output']['pivots']) + generated_columns]
 
@@ -163,12 +180,13 @@ def assemble(shape, type_config, dataframes):
   if sorted(list(set(to_return.columns))) != sorted(to_return.columns):
     raise Exception("Duplicate features found.")
 
+
   for col in to_return.columns:
     if to_return[col].isna().any():
       print("Column %s has NaN items " % col, to_return[col].unique())
   # print('assembler is done\n\n\n')
 
-  mapping = { c:date_yearmonth(cmonth_to_date(c)) for c in range(576, 594) }
+  mapping = { c:date_yearmonth(cmonth_to_date(c)) for c in range(570, 650) }
   print("map is", mapping)
   to_return['CMONTH(date)'] = to_return['CMONTH(date)'].replace(mapping)
 
