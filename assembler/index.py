@@ -120,7 +120,7 @@ def assemble(shape, type_config, dataframes):
     if not set(config['pivots']).issubset(df.columns):
       raise Exception('Expected pivots (%s) for df %s but found columns [%s].' \
         % (config['pivots'], type_name, ', '.join(df.columns)))
-    if df.duplicated(config['pivots']).shape[0]:
+    if df.duplicated(config['pivots']).any():
       print("Dropping duplicates in df %s" % type_name, \
         config['pivots'],
         df[config['pivots']].shape, df.duplicated(config['pivots']).shape[0])

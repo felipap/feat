@@ -52,6 +52,7 @@ def can_collapse_date(child, datefield):
   # dropna=False so that if field is X for certain cmonths and None for others,
   # collapse will not be allowed.
   # counts = df.groupby(minusdate).nunique(dropna=False)
+  
   counts = stringify_unhashables(df).groupby(minusdate).nunique(dropna=True)
   counts = counts[[child.name]]
   counts.reset_index(inplace=True)
@@ -60,6 +61,7 @@ def can_collapse_date(child, datefield):
   if offending.empty:
     return True
   print("Can't collapse %s." % child.name)
+
   return False
 
 def uncollapse_date(name, df, child, datefield, expand_to_original=True):

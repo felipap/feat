@@ -243,7 +243,7 @@ def call_cdsince(ctx, name, args):
 
   def apply(row):
     if pd.isnull(row[child.name]):
-      return 1000000
+      return -99999
     return (datetime.now() - row[child.name]).days
     # r = relativedelta.relativedelta(datetime.now(), row[child.name])
     # return r.months  * (12 * r.years)
@@ -266,7 +266,7 @@ def call_cmsince(ctx, name, args):
 
   def apply(row):
     if pd.isnull(row[child.name]):
-      return 1000
+      return -99999
     return round((datetime.now() - row[child.name]).days / 30)
 
   df = child.get_stripped()
@@ -425,7 +425,7 @@ def call_tsinceseen(ctx, name, args, pivots):
   df[name] = df[time_col] - df[name]
   result = ctx.create_subframe(name, pivots)
   # Fill NaN values with big positive number.
-  result.fill_data(df, fillnan=10000)
+  result.fill_data(df, fillnan=-99999)
   return result
 
 register_function('TimeSinceSeen', 'TSINCESEEN', call_tsinceseen, num_args=2, takes_pivots=True)
