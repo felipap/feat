@@ -7,7 +7,18 @@ import numpy as np
 
 def __get_hashable_columns(df):
   result = []
+  # import pickle
+  # pickle.dump(df, open('/Users/felipe/dev/what', 'wb'))
+
+  # import ptvsd
+  # ptvsd.enable_attach(address=('localhost', 5678), redirect_output=True)
+  # ptvsd.wait_for_attach()
+  # breakpoint()
+  
   for column in df.columns:
+    print('column is', column, df[column].first_valid_index())
+    if df[column].first_valid_index() is None:
+      print("FUCK")
     first_notnan = df[column][df[column].first_valid_index()]
     # FIXME definitely improve this list
     if isinstance(first_notnan, dict):
@@ -28,8 +39,11 @@ def drop_hashable_duplicates(df, method='ignore'):
   if method != 'ignore':
     raise NotImplementedError()
 
+  df = stringify_unhashables(df)
+  return df.drop_duplicates()
+  
   hashable_columns = __get_hashable_columns(df)
-  if set(hashable_columns) != set(hashable_columns):
+  if set(df.columns) != set(hashable_columns):
     minus = set(df.columns) - set(hashable_columns)
     print("WARNING: ignoring columns %s in .drop_duplicate()" % minus)
   return df.drop_duplicates(subset=hashable_columns)

@@ -49,6 +49,8 @@ class Frame(object):
       assert col in df.columns, 'Pivot col \'%s\' not found in %s' % (col, df.columns)
     assert self.name in df.columns, '%s not in %s' % (self.name, df.columns)
 
+    assert df[~df[self.name].isna()].shape[0] > 0, "Empty dataset?"
+
     self.fillnan = fillnan
     # if df.drop_duplicates().shape[0] != df.shape[0]:
     #   print("WARNING: frame %s filled with duplicate data" % self)

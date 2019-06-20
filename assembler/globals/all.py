@@ -49,44 +49,6 @@ def call_foo(ctx, name, args):
 
 #
 
-def PARSE_FLEX_PLANS(ctx, name, args):
-  child = args[0]
-
-  df = child.get_stripped()
-  df.rename(columns={ child.name: name }, inplace=True)
-  
-  def foo(row):
-    # print(row)
-    field = row[name]
-    # customer = users[users['id']==row['customer']]
-    if field == '[]':
-      return 1
-
-    # print(field, '\n')
-    import pyjson5
-    plans = pyjson5.loads(field.replace(': True', ': true').replace(': False', ': false').replace(': None', ': null'))
-    # print(plans, '\n')
-    # print(plans[0]['items'][0]['id'])
-    return plans[0]['items'][0]['id']
-  
-  import traceback
-  
-  try:
-    df[name] = df.apply(foo, axis=1)
-  except Exception as e:
-    print("Error using .apply()", e)
-    traceback.print_exc()
-    asdf()
-
-  result = ctx.create_subframe(name, child.pivots)
-  result.fill_data(df, fillnan=0)
-  return result
-
-register_function('PARSE_FLEX_PLANS', 'PARSE_FLEX_PLANS', PARSE_FLEX_PLANS, num_args=1)
-
-
-#
-
 def call_greaterthan(ctx, name, args):
   child = args[0]
   arg = args[1]
@@ -217,12 +179,12 @@ def call_cmonth(ctx, name, args):
     df = df.drop('CMONTH(date)', axis=1).drop_duplicates()
     pivots.remove('CMONTH(date)')
 
-  assert df[child.name].dtype == np.dtype('datetime64[ns]')
+  # assert df[child.name].dtype == np.dtype('datetime64[ns]')
 
   def apply(row):
     # print("child.name", child.name, row[child.name])
-    # return datetime.strptime(row[child.name], '%Y-%m-%dT%H:%M:%S.%f')
-    return date_to_cmonth(row[child.name])
+    return date_to_cmonth(datetime.strptime(row[child.name], '%Y-%m-%dT%H:%M:%S.%fZ'))
+    # return date_to_cmonth(row[child.name])
 
     # value = row[child.name] # datetime.strptime(row['date'], '%Y-%m-%d')
     # return int((value.year - 1970)*12+value.month)
@@ -366,6 +328,7 @@ def call_timesince(ctx, name, args, pivots):
   colUniqueVals = {}
   for pivot in child.pivots:
     colUniqueVals[pivot] = ctx.df[pivot].unique()
+
   colUniqueVals[time_col] = ctx.get_date_range()
   df = gen_cartesian(colUniqueVals)
 
@@ -373,7 +336,7 @@ def call_timesince(ctx, name, args, pivots):
   c = child.df.set_index(list(child.pivots))
 
   df[child.name] = c[child.name]
-  df[name] = df[time_col]-df[child.name]
+  df[name] = df[time_col] - df[child.name]
 
   # Fill rows for which event hasn't happened yet with very negative number.
   df.loc[df[name]<0,name] = -99999

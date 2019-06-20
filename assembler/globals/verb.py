@@ -24,18 +24,19 @@ def DICT_GET(ctx, name, args):
   df.rename(columns={ child.name: name }, inplace=True)
   collapsable = can_collapse_date(child, 'CMONTH(date)')
   if collapsable:
+    print('gonna do it --------')
     df = drop_hashable_duplicates(df.drop('CMONTH(date)', axis=1))
   
   def get_field(row):
     if not row[name] or pd.isnull(row[name]):
-      return None
+      return np.nan
     try:
       # FIXME stranger danger!?
       return eval("row[name]%s" % field)
     except Exception as e:
       # import traceback; traceback.print_exc()
-      print("Failed to get from row", row[name], field)
-      return None
+      print("Failed to get from row", row[name], field, e)
+      return np.nan
   df[name] = fancy_apply(df, get_field, axis=1)
  
   if collapsable:
@@ -60,7 +61,8 @@ def JSON_GET(ctx, name, args):
   def parse_json(row):
     if not row[name] or pd.isnull(row[name]) or row[name] == '[]':
       return None
-    return pyjson5.loads(row[name])
+    val = row[name].replace(': True', ': true').replace(': False', ': false').replace(': None', ': null')
+    return pyjson5.loads(val)
 
   df['__parsed__'] = fancy_apply(df, parse_json, axis=1)
   

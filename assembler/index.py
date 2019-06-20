@@ -108,7 +108,9 @@ def assemble(shape, type_config, dataframes):
   dataframes['Output'] = init_output_frame(dataframes, shape['output'], shape['date_range'])
 
   for (type_name, config) in type_config.items():
-    name = caseword(type_name)
+    name = caseword(type_name) # +'s'
+    print(name)
+    dataframes[name] = dataframes.pop(type_name)
     df = dataframes[name]
     
     if 'CMONTH(date)' in config['pivots']:
@@ -144,7 +146,7 @@ def assemble(shape, type_config, dataframes):
   context.graph.add_node('Output', pivots=shape['output']['pivots'])
   for val, key in shape['output']['pointers'].items():
     colOut, tableIn, colIn = (val,*key.split('.'))
-    context.graph.add_edge('Output', colOut, tableIn, colIn)
+    context.graph.add_edge('Output', colOut, caseword(tableIn), colIn)
 
   print("Context graph is", context.graph)
 
