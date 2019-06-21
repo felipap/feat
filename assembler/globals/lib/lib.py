@@ -9,7 +9,7 @@ from functools import wraps
 import pyjson5
 from pandas.io.json import json_normalize
 
-from ..lib.workarounds import stringify_unhashables
+from ...lib.workarounds import stringify_unhashables
 
 def fancy_apply(df, function, **kwargs):
   total = df.shape[0]
@@ -19,7 +19,7 @@ def fancy_apply(df, function, **kwargs):
   def wrapped(row):
     nonlocal count
     count += 1
-    if count % 2000 == 0:
+    if count % 6000 == 0:
       print("\r<%s> done: %d%%" % (function.__name__, 100*count/total), end="")
     return function(row)
 

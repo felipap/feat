@@ -13,7 +13,7 @@ from brain.src.live import load_namespace
 
 # start = timer()
 # loop = asyncio.get_event_loop()
-# dataframes = loop.run_until_complete(load_namespace('verb', range(576, 593)))
+# dataframes = loop.run_until_complete(load_namespace('verb', range(575, 593)))
 # print("elapsed: %ds" % (timer() - start))
 # pickle.dump(dataframes, open('dataframes.pickle', 'wb'))
 dataframes = pickle.load(open('dataframes.pickle', 'rb'))
@@ -47,7 +47,7 @@ type_config = {
 }
 
 shape = {
-    'date_range': ['2017-12', '2019-5'],
+    'date_range': ['2017-11', '2019-5'],
     'features': [
     "GREATERTHAN(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),0)",
 

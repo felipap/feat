@@ -4,30 +4,34 @@ from dateutil import relativedelta
 import time
 
 from ..lib.gen_cartesian import gen_cartesian
-from .lib import can_collapse_date
+from .lib.lib import can_collapse_date
 from ..lib.cmonth import date_to_cmonth
 
 import numpy as np
 import pandas as pd
 
 fns = {}
-def register_function(name, keyword, call, **kwargs):
+def register_function(keyword, call, **kwargs):
   if keyword in fns:
     raise Exception()
   fns[keyword] = dict(
-    name=name,
+    name=keyword,
     keyword=keyword,
     call=call,
     takes_pivots=kwargs.get('takes_pivots', False),
     num_args=kwargs.get('num_args', 1),
   )
 
+from .counts import accumulate
+register_function('ACCUMULATE', accumulate, num_args=1)
+
 from .verb import JSON_GET, DICT_GET
-register_function('JSON_GET',  'JSON_GET', JSON_GET, num_args=2)
-register_function('DICT_GET',  'DICT_GET', DICT_GET, num_args=2)
+register_function('JSON_GET', JSON_GET, num_args=2)
+register_function('DICT_GET', DICT_GET, num_args=2)
+
 from .formatters import EMAIL_DOMAIN, DOMAIN_EXT
-register_function('EMAIL_DOMAIN',  'EMAIL_DOMAIN', EMAIL_DOMAIN, num_args=1)
-register_function('DOMAIN_EXT',  'DOMAIN_EXT', DOMAIN_EXT, num_args=1)
+register_function('EMAIL_DOMAIN', EMAIL_DOMAIN, num_args=1)
+register_function('DOMAIN_EXT', DOMAIN_EXT, num_args=1)
 
 def getFunction(name):
   return fns.get(name)
@@ -45,7 +49,7 @@ def call_foo(ctx, name, args):
   result.fill_data(df, fillnan=0)
   return result
 
-# register_function('Foo', 'FOO', call_foo, num_args=2)
+# register_function('FOO', call_foo, num_args=2)
 
 #
 
@@ -61,7 +65,7 @@ def call_greaterthan(ctx, name, args):
   result.fill_data(df, fillnan=0)
   return result
 
-register_function('GreaterThan', 'GREATERTHAN', call_greaterthan, num_args=2)
+register_function('GREATERTHAN', call_greaterthan, num_args=2)
 
 #
 
@@ -82,11 +86,10 @@ def call_fwd(ctx, name, args, pivots):
     pivots = child.pivots
   
   result = ctx.create_subframe(name, pivots)
-  print("It is: ", child.fillnan)
   result.fill_data(shifted, child.fillnan)
   return result
 
-register_function('Forward', 'SHIFT', call_fwd, num_args=2, takes_pivots=True)
+register_function('SHIFT', call_fwd, num_args=2, takes_pivots=True)
 
 #f
 
@@ -99,7 +102,7 @@ def call_get(ctx, name, args, pivots):
   child.name = name
   return child
 
-register_function('Get', 'GET', call_get, num_args=1, takes_pivots=True)
+register_function('GET', call_get, num_args=1, takes_pivots=True)
 
 #
 
@@ -118,7 +121,7 @@ def call_minusprev(ctx, name, args, pivots):
   df = child.get_stripped()
   df.rename(columns={ child.name: name }, inplace=True)
 
-  # df = df[df['customer']=='5b69c4280998ba2b42deb32c']
+  df = df[df['customer']=='5b69c4280998ba2b42deb32c']
   subtracted = df.copy()
   subtracted[time_col] += 1
 
@@ -148,7 +151,7 @@ def call_minusprev(ctx, name, args, pivots):
   result.fill_data(df, 0)
   return result
 
-register_function('MinusPrev', 'MINUSPREV', call_minusprev, num_args=1, takes_pivots=True)
+register_function('MINUSPREV', call_minusprev, num_args=1, takes_pivots=True)
 
 #
 
@@ -162,7 +165,7 @@ def call_mean(ctx, name, args, pivots):
   result.fill_data(agg)
   return result
 
-register_function('Mean', 'MEAN', call_mean, num_args=1, takes_pivots=True)
+register_function('MEAN', call_mean, num_args=1, takes_pivots=True)
 
 #
 
@@ -194,7 +197,7 @@ def call_cmonth(ctx, name, args):
   result.fill_data(df)
   return result
 
-register_function('CMonth', 'CMONTH', call_cmonth, num_args=1)
+register_function('CMONTH', call_cmonth, num_args=1)
 
 #
 
@@ -217,7 +220,7 @@ def call_cdsince(ctx, name, args):
   result.fill_data(df)
   return result
 
-register_function('CDaySince', 'CDAYSINCE', call_cdsince, num_args=1)
+register_function('CDAYSINCE', call_cdsince, num_args=1)
 
 #
 
@@ -238,7 +241,7 @@ def call_cmsince(ctx, name, args):
   result.fill_data(df)
   return result
 
-register_function('CMonthSince', 'CMONTHSINCE', call_cmsince, num_args=1)
+register_function('CMONTHSINCE', call_cmsince, num_args=1)
 
 #
 
@@ -255,7 +258,7 @@ def call_exists(ctx, name, args, pivots):
   result.fill_data(agg)
   return result
 
-register_function('Exists', 'EXISTS', call_exists, num_args=1, takes_pivots=True)
+register_function('EXISTS', call_exists, num_args=1, takes_pivots=True)
 
 #
 
@@ -271,7 +274,7 @@ def call_sum(ctx, name, args, pivots):
   result.fill_data(agg, fillnan=0)
   return result
 
-register_function('Sum', 'SUM', call_sum, num_args=1, takes_pivots=True)
+register_function('SUM', call_sum, num_args=1, takes_pivots=True)
 
 #
 
@@ -314,7 +317,7 @@ def call_accumulate(ctx, name, args):
   result.fill_data(acc, fillnan=0)
   return result
 
-register_function('Accumulate', 'ACC', call_accumulate, num_args=1, takes_pivots=False)
+register_function('ACC', call_accumulate, num_args=1, takes_pivots=False)
 
 #
 
@@ -349,7 +352,7 @@ def call_timesince(ctx, name, args, pivots):
   result.fill_data(df)
   return result
 
-register_function('TimeSince', 'TIME_SINCE', call_timesince, num_args=1, takes_pivots=True)
+register_function('TIME_SINCE', call_timesince, num_args=1, takes_pivots=True)
 
 #
 
@@ -391,4 +394,4 @@ def call_tsinceseen(ctx, name, args, pivots):
   result.fill_data(df, fillnan=-99999)
   return result
 
-register_function('TimeSinceSeen', 'TSINCESEEN', call_tsinceseen, num_args=2, takes_pivots=True)
+register_function('TSINCESEEN', call_tsinceseen, num_args=2, takes_pivots=True)

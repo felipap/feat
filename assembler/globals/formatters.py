@@ -8,7 +8,7 @@ import pandas as pd
 import pyjson5
 from pandas.io.json import json_normalize
 
-from .lib import fancy_apply, can_collapse_date, uncollapse_date, ensure_same_nrow
+from .lib.lib import fancy_apply, can_collapse_date, uncollapse_date, ensure_same_nrow
 
 @ensure_same_nrow
 def EMAIL_DOMAIN(ctx, name, args):

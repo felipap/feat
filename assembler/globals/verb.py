@@ -11,7 +11,7 @@ from pandas.io.json import json_normalize
 
 from ..lib.workarounds import drop_hashable_duplicates
 from ..lib.cmonth import date_to_cmonth
-from .lib import fancy_apply, can_collapse_date, uncollapse_date
+from .lib.lib import fancy_apply, can_collapse_date, uncollapse_date
 
 # Add tests to make sure sizes are changed?
 

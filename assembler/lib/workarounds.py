@@ -16,9 +16,8 @@ def __get_hashable_columns(df):
   # breakpoint()
   
   for column in df.columns:
-    print('column is', column, df[column].first_valid_index())
     if df[column].first_valid_index() is None:
-      print("FUCK")
+      raise Exception()
     first_notnan = df[column][df[column].first_valid_index()]
     # FIXME definitely improve this list
     if isinstance(first_notnan, dict):
@@ -52,7 +51,8 @@ def drop_hashable_duplicates(df, method='ignore'):
 def stringify_unhashables(df):
   df = df.copy()
   unhashable_columns = list(set(df.columns) - set(__get_hashable_columns(df)))
-  print("unhashable_columns", unhashable_columns)
+  if unhashable_columns:
+    print("unhashable_columns", unhashable_columns)
   for uc in unhashable_columns:
     # df[uc] = df[uc].astype(str)
     # https://github.com/pandas-dev/pandas/issues/25716

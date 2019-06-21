@@ -46,7 +46,7 @@ type_config = {
 }
 
 shape = {
-    'date_range': ['2017-12', '2019-5'],
+    'date_range': ['2017-11', '2019-5'],
     'features': [
       "customer.status",
       "TIME_SINCE(CMONTH(Users{customer=id}.created))",
