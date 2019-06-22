@@ -14,13 +14,13 @@ from ...lib.workarounds import stringify_unhashables
 def fancy_apply(df, function, **kwargs):
   total = df.shape[0]
   
-  count = 0
+  # count = 0
   @wraps(function)
   def wrapped(row):
-    nonlocal count
-    count += 1
-    if count % 6000 == 0:
-      print("\r<%s> done: %d%%" % (function.__name__, 100*count/total), end="")
+    # nonlocal count
+    # count += 1
+    # if count % 6000 == 0:
+    #   print("\r<%s> done: %d%%" % (function.__name__, 100*count/total), end="")
     return function(row)
 
   start = timer()

@@ -8,7 +8,7 @@ import numpy as np
 
 from .groupby_combine import split_respecting_boundaries, process_df_chunk
 
-def make_pergroup(innerfn):
+def make_pergroup(innerfn, fillna=0):
   
   @wraps(innerfn)
   def magic(ctx, name, args):
@@ -47,6 +47,6 @@ def make_pergroup(innerfn):
     final.rename(columns={ '_tcount_': 'CMONTH(date)', '_result_': name }, inplace=True)
 
     result = ctx.create_subframe(name, child.pivots)
-    result.fill_data(final)
+    result.fill_data(final, fillnan=fillna)
     return result
   return magic

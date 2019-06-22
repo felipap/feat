@@ -30,6 +30,10 @@ def annotate_match(method):
     result = method(self, children, meta)
     assert type(result) == dict, \
       "decorator expects method result to always be a dictionary"
+    
+    if meta.empty:
+      return None
+    
     name = self.text[meta.start_pos: meta.end_pos]\
       .replace("\n","")\
       .replace(" ","")\

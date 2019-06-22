@@ -22,8 +22,12 @@ def register_function(keyword, call, **kwargs):
     num_args=kwargs.get('num_args', 1),
   )
 
-from .counts import accumulate
+from .counts import accumulate, csince
 register_function('ACCUMULATE', accumulate, num_args=1)
+register_function('CSINCE', csince, num_args=1)
+
+from .stats import strend
+register_function('STREND', strend, num_args=1)
 
 from .verb import JSON_GET, DICT_GET
 register_function('JSON_GET', JSON_GET, num_args=2)
@@ -275,6 +279,22 @@ def call_sum(ctx, name, args, pivots):
   return result
 
 register_function('SUM', call_sum, num_args=1, takes_pivots=True)
+
+#
+
+def call_count(ctx, name, args, pivots):
+  child = args[0]
+  # FIXME: childResult should be used to generate the thing below, not ctx.df
+  # and childName
+  agg = ctx.df.groupby(pivots).agg({ child.name: ['count'] })
+  agg.columns = [name]
+  agg.reset_index(inplace=True)
+  agg[name] = agg[name].astype(np.int64) # REVIEW type cast
+  result = ctx.create_subframe(name, pivots)
+  result.fill_data(agg, fillnan=0)
+  return result
+
+register_function('COUNT', call_count, num_args=1, takes_pivots=True)
 
 #
 

@@ -166,7 +166,7 @@ def assemble(shape, type_config, dataframes):
     start = timer()
     result = assemble_column(context, cmd)
     end = timer()
-    print("elapsed:", end - start)
+    print("elapsed %ds:" % (end - start))
 
     # Calling assemble_column with context.current set to 'Output' should take
     # care of merging the assembled col umns with the Output dataframe.

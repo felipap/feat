@@ -126,7 +126,10 @@ def assemble_column(ctx, tree):
     child = assemble_column(ctx, tree['next'])
     ctx.swapIn(prev_current)
 
-    mapping = tree.get('translation', {}).get('map_str')
+    if tree.get('translation'):
+      mapping = tree['translation'].get('map_str')
+    else:
+      mapping = None
     child.translate_pivots_root(ctx, ctx.current, mapping)
     child.rename(tree['name'])
 

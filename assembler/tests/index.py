@@ -60,16 +60,20 @@ TYPES = {
 
 FEATURES = [
   # "JSON_GET(customer.shipping_address,\"['state']\")",
-  "ACCUMULATE(Order_item{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|order.customer,CMONTH(order.date)))",
-  "ACC(Order_item{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|order.customer,CMONTH(order.date)))",
+  "STREND(Order_item{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|order.customer,CMONTH(order.date)))",
+  # "ACC(Order_item{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|order.customer,CMONTH(order.date)))",
   # "MAGIC(Order_item{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|order.customer,CMONTH(order.date)))"
+  # "SHIFT(Order{CMONTH(date)=CMONTH(date);customer=customer}.COUNT(id|customer,CMONTH(date)), 1)"
+  # "Order.COUNT(id|customer,CMONTH(date))",
+  # "CSINCE(Order.COUNT(id|customer,CMONTH(date)))",
+  # "Order_item{CMONTH(date)=CMONTH(order.date);customer=order.customer}.TSINCESEEN(CMONTH(order.date),CMONTH(order.date)|order.customer,CMONTH(order.date))"
 ]
 
 
 async def main():
-  dataframes = load_namespace_from_file('/Users/felipe/data.json')
-  dataframes['user'].rename(columns={ '__ts__': 'CMONTH(date)' }, inplace=True)
-  pickle.dump(dataframes, open('/Users/felipe/dev/assemblertest.pickle', 'wb'))
+  # dataframes = load_namespace_from_file('/Users/felipe/data.json')
+  # dataframes['user'].rename(columns={ '__ts__': 'CMONTH(date)' }, inplace=True)
+  # pickle.dump(dataframes, open('/Users/felipe/dev/assemblertest.pickle', 'wb'))
   dataframes = pickle.load(open('/Users/felipe/dev/assemblertest.pickle', 'rb'))
 
   shape = {
