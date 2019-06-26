@@ -36,10 +36,16 @@ def load_namespace_from_file(filepath):
 
 TYPES = {
   "user": {
+    "column_cast": {
+      "created": "datetime64[ns]",
+    },
     "is_live": True,
     "pivots": ["id", "CMONTH(date)"]
   },
   "order": {
+    "column_cast": {
+      "date": "datetime64[ns]"
+    },
     "pivots": ["id"],
     "pointers": {
       "customer": "user.id",
@@ -52,6 +58,12 @@ TYPES = {
       "product": "product.id",
     },
   },
+  "text": {
+    "pivots": ["id"],
+    "pointers": {
+      "customer": "user.id",
+    },
+  },
   "product": {
     "pivots": ["id"],
   },
@@ -59,8 +71,15 @@ TYPES = {
 
 
 FEATURES = [
+  "JSON_GET(customer.flex_plans,\"['discounts'][0]\")"
+  # "TIME_SINCE(User{customer=id}.created)",
+  # "Text{CMONTH(date)=CMONTH(timestamp)}.COUNT(id|CMONTH(timestamp),customer)",
+  # "Order.LATEST(JSON_GET(discounts,\"[0]['code']\")|customer,CMONTH(date))",
+  # "Order.SUM(JSON_GET(paid,\"['subtotal']\")|customer,CMONTH(date))",
+  # "Order.LATEST(order_type|customer,CMONTH(date))",
+  # "GREATERTHAN(Order_item{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),0)",
   # "JSON_GET(customer.shipping_address,\"['state']\")",
-  "STREND(Order_item{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|order.customer,CMONTH(order.date)))",
+  # "STREND(Order_item{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|order.customer,CMONTH(order.date)))",
   # "ACC(Order_item{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|order.customer,CMONTH(order.date)))",
   # "MAGIC(Order_item{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|order.customer,CMONTH(order.date)))"
   # "SHIFT(Order{CMONTH(date)=CMONTH(date);customer=customer}.COUNT(id|customer,CMONTH(date)), 1)"
@@ -89,6 +108,8 @@ async def main():
   result = assembler.assemble(shape, TYPES, dataframes)
   pickle.dump(result, open('/Users/felipe/dev/assemblertest_result.pickle', 'wb'))
   result = pickle.load(open('/Users/felipe/dev/assemblertest_result.pickle', 'rb'))
+
+  # print(result[result['customer']=='5b69c4240998ba2b42de9531'])
 
 
 loop = asyncio.get_event_loop()

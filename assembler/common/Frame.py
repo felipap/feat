@@ -7,7 +7,7 @@ class Frame(object):
   """
   """
 
-  def __init__(self, name, table_name, pivots, fillnan=None):
+  def __init__(self, name, table_name, pivots, fillnan=None, dtype=None):
     """
     Note that pivots might include the own column name. If an Orders table has a
     compose key (buyer, product, time), a frame containing just the column
@@ -21,6 +21,7 @@ class Frame(object):
     self.name = name
     self.df = None
     self.fillnan = fillnan
+    self.dtype = dtype
 
 
   def __repr__(self):
@@ -34,11 +35,12 @@ class Frame(object):
   def copy(self):
     frame = Frame(self.name, self.table_name, self.pivots)
     frame.fillnan = self.fillnan
+    frame.dtype = self.dtype
     frame.df = self.df.copy()
     return frame
 
 
-  def fill_data(self, df, fillnan=None):
+  def fill_data(self, df, fillnan=None, dtype=None):
     # print("self.name", self, self.df is not None and self.df.columns, df.columns)
     
     if self.df is not None:
@@ -52,6 +54,7 @@ class Frame(object):
     assert df[~df[self.name].isna()].shape[0] > 0, "Empty dataset?"
 
     self.fillnan = fillnan
+    self.dtype = dtype
     # if df.drop_duplicates().shape[0] != df.shape[0]:
     #   print("WARNING: frame %s filled with duplicate data" % self)
     # NOTE THIS IS NEW!!!!

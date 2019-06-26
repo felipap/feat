@@ -3,6 +3,8 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 def date_to_cmonth(date):
+  if isinstance(date, str):
+    date = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ')
   assert isinstance(date, datetime)
   return (date.year-1970)*12+date.month
 

@@ -11,7 +11,7 @@ from .groupby_combine import split_respecting_boundaries, process_df_chunk
 def make_pergroup(innerfn, fillna=0):
   
   @wraps(innerfn)
-  def magic(ctx, name, args):
+  def magic(ctx, name, args, pivots=None):
     child = args[0]
 
     df = child.get_stripped()
@@ -20,10 +20,10 @@ def make_pergroup(innerfn, fillna=0):
     df.rename(columns={ child.name: '_value_' }, inplace=True)
 
     keyminustime = list(set(child.pivots)-{'CMONTH(date)'})
-    print(keyminustime)
+    # print(keyminustime)
 
     date_counts = sorted(ctx.get_date_range())
-    print(date_counts)
+    # print(date_counts)
 
     df_chunks = split_respecting_boundaries(df, keyminustime, 4)
     chunks = [{
@@ -31,18 +31,17 @@ def make_pergroup(innerfn, fillna=0):
       "cols": keyminustime,
       "date_counts": date_counts,
       "fn": innerfn,
+      # TODO SUPPORT PIVOTS
       "time_col": "CMONTH(date)"
     } for dc in df_chunks]
 
     start = timer()
-    
     results = list(map(process_df_chunk, chunks))
     # pool = multiprocessing.Pool()
     # results = pool.map(process_df_chunk, chunks)
-
     
     final = pd.DataFrame(list(np.hstack(results)))
-    print(final)
+    # print(final)
     print("elapsed: %ds" % (timer() - start))
     final.rename(columns={ '_tcount_': 'CMONTH(date)', '_result_': name }, inplace=True)
 

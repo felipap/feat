@@ -8,6 +8,8 @@ import pandas as pd
 from .lib.pergroup import make_pergroup
 
 def accumulate_foreach(keys, rows):
+  '''Accumulate _value_ across dates.'''
+
   result = {}
   count = 0
   for date in sorted(rows.keys()):
@@ -16,9 +18,12 @@ def accumulate_foreach(keys, rows):
       count += row['_value_'] 
     result[date] = count
   return result
+
 accumulate = make_pergroup(accumulate_foreach)
 
 def csince_foreach(key, rows):
+  '''Count times since seen _value_ set.'''
+  
   result = {}
   count = None
   for date in sorted(rows.keys()):

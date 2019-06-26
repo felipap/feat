@@ -22,6 +22,8 @@ def __get_hashable_columns(df):
     # FIXME definitely improve this list
     if isinstance(first_notnan, dict):
       continue
+    elif isinstance(first_notnan, list):
+      continue
     else:
       result.append(column)
   return result

@@ -106,6 +106,9 @@ class Context(object):
 
     if not frame.fillnan is None:
       self.df.fillna(value={ frame.name: frame.fillnan }, inplace=True)
+    if not frame.dtype is None:
+      print("CASTING!", frame.dtype, frame.name)
+      self.df[frame.name] = self.df[frame.name].astype(frame.dtype)
 
     # self.cached_frames[frame.name] = self.graph.pivots[self.current]
     copied = frame.copy()

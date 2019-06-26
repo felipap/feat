@@ -5,7 +5,8 @@ import time
 
 from ..lib.gen_cartesian import gen_cartesian
 from .lib.lib import can_collapse_date
-from ..lib.cmonth import date_to_cmonth
+from ..lib.cmonth import date_to_cmonth, cmonth_to_date
+from .lib.pergroup import make_pergroup
 
 import numpy as np
 import pandas as pd
@@ -26,6 +27,9 @@ from .counts import accumulate, csince
 register_function('ACCUMULATE', accumulate, num_args=1)
 register_function('CSINCE', csince, num_args=1)
 
+from .compare import greaterthan
+register_function('GREATERTHAN', greaterthan, num_args=2)
+
 from .stats import strend
 register_function('STREND', strend, num_args=1)
 
@@ -39,37 +43,6 @@ register_function('DOMAIN_EXT', DOMAIN_EXT, num_args=1)
 
 def getFunction(name):
   return fns.get(name)
-
-
-def call_foo(ctx, name, args):
-  child = args[0]
-  arg = args[1]
-
-  df = child.get_stripped()
-  df.rename(columns={ child.name: name }, inplace=True)
-  df[name] = (df[name]>int(arg)).astype(np.int64)
-
-  result = ctx.create_subframe(name, child.pivots)
-  result.fill_data(df, fillnan=0)
-  return result
-
-# register_function('FOO', call_foo, num_args=2)
-
-#
-
-def call_greaterthan(ctx, name, args):
-  child = args[0]
-  arg = args[1]
-
-  df = child.get_stripped()
-  df.rename(columns={ child.name: name }, inplace=True)
-  df[name] = (df[name]>int(arg)).astype(np.int64)
-
-  result = ctx.create_subframe(name, child.pivots)
-  result.fill_data(df, fillnan=0)
-  return result
-
-register_function('GREATERTHAN', call_greaterthan, num_args=2)
 
 #
 
@@ -181,20 +154,13 @@ def call_cmonth(ctx, name, args):
   df = child.get_stripped()
 
   pivots = child.get_pivots()
-  if 'CMONTH(date)' in pivots:
-    assert can_collapse_date(child, 'CMONTH(date)')
-    df = df.drop('CMONTH(date)', axis=1).drop_duplicates()
-    pivots.remove('CMONTH(date)')
-
-  # assert df[child.name].dtype == np.dtype('datetime64[ns]')
+  if name in pivots:
+    assert can_collapse_date(child, name)
+    df = df.drop(name, axis=1).drop_duplicates()
+    pivots.remove(name)
 
   def apply(row):
-    # print("child.name", child.name, row[child.name])
     return date_to_cmonth(datetime.strptime(row[child.name], '%Y-%m-%dT%H:%M:%S.%fZ'))
-    # return date_to_cmonth(row[child.name])
-
-    # value = row[child.name] # datetime.strptime(row['date'], '%Y-%m-%d')
-    # return int((value.year - 1970)*12+value.month)
   df[name] = df.apply(apply, axis=1)
 
   result = ctx.create_subframe(name, pivots)
@@ -265,6 +231,19 @@ def call_exists(ctx, name, args, pivots):
 register_function('EXISTS', call_exists, num_args=1, takes_pivots=True)
 
 #
+
+def call_latest(ctx, name, args, pivots):
+  child = args[0]
+  # FIXME: childResult should be used to generate the thing below, not ctx.df
+  # and childName
+  agg = ctx.df.groupby(pivots).agg({ child.name: (lambda x: x.iloc[0]) })
+  agg.columns = [name]
+  agg.reset_index(inplace=True)
+  result = ctx.create_subframe(name, pivots)
+  result.fill_data(agg, fillnan=0)
+  return result
+
+register_function('LATEST', call_latest, num_args=1, takes_pivots=True)
 
 def call_sum(ctx, name, args, pivots):
   child = args[0]
@@ -341,6 +320,31 @@ register_function('ACC', call_accumulate, num_args=1, takes_pivots=False)
 
 #
 
+
+def timesince(keys, rows):
+  '''Accumulate _value_ across dates.'''
+
+  # if type(rows[0]['_value_']) == int:
+  #   raise Exception('Not expected value integer')
+
+  # TODO assert continuity of key (ie. CMONTH(date)) values, otherwise this will break.
+
+  count = None
+  result = {}
+  for date in sorted(rows.keys()):
+    if not count is None:
+      count += 1
+      result[date] = count
+    elif not rows[date] or date < date_to_cmonth(rows[date]['_value_']):
+      result[date] = -9999
+    else:
+      count = 0
+      result[date] = 0
+  return result
+
+call_timesince = make_pergroup(timesince)
+
+"""
 def call_timesince(ctx, name, args, pivots):
   child = args[0]
   time_col = 'CMONTH(date)' # args[1].name
@@ -371,6 +375,7 @@ def call_timesince(ctx, name, args, pivots):
   result = ctx.create_subframe(name, {time_col,*child.pivots})
   result.fill_data(df)
   return result
+"""
 
 register_function('TIME_SINCE', call_timesince, num_args=1, takes_pivots=True)
 

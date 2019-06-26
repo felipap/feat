@@ -24,7 +24,6 @@ def DICT_GET(ctx, name, args):
   df.rename(columns={ child.name: name }, inplace=True)
   collapsable = can_collapse_date(child, 'CMONTH(date)')
   if collapsable:
-    print('gonna do it --------')
     df = drop_hashable_duplicates(df.drop('CMONTH(date)', axis=1))
   
   def get_field(row):
@@ -54,7 +53,7 @@ def JSON_GET(ctx, name, args):
   df = child.get_stripped()
   
   df.rename(columns={ child.name: name }, inplace=True)
-  collapsable = can_collapse_date(child, 'CMONTH(date)')
+  collapsable = 'CMONTH(date)' in df.columns and can_collapse_date(child, 'CMONTH(date)')
   if collapsable:
     df = drop_hashable_duplicates(df.drop('CMONTH(date)', axis=1))
 
@@ -66,17 +65,23 @@ def JSON_GET(ctx, name, args):
 
   df['__parsed__'] = fancy_apply(df, parse_json, axis=1)
   
+  failed_count = 0
   def get_field(row):
+    nonlocal failed_count
     if not row['__parsed__']:
       return None
     try:
       # FIXME stranger danger!?
-      return eval("row['__parsed__']%s" % field)
+      result = eval("row['__parsed__']%s" % field)
+      return result
     except Exception as e:
+      failed_count += 1
       # import traceback; traceback.print_exc()
-      print("Failed to get from row", row['__parsed__'], field)
+      # print("Failed to get from row", row['__parsed__'], field)
       return None
   df[name] = fancy_apply(df, get_field, axis=1)
+
+  print("JSON_GET failed %d times (%d%%)" % (failed_count, failed_count/df[name].shape[0]*100))
  
   if collapsable:
     df = uncollapse_date(name, df, child, 'CMONTH(date)')

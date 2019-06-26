@@ -61,6 +61,9 @@ def init_output_frame(dataframes, output_config, date_range):
     tableField = output_config['pointers'][column]
     tableIn, keyIn = tableField.split('.')
 
+    if tableIn not in dataframes:
+      raise Exception(f'Expected to find \'{tableIn}\' in dataframes object (keys {dataframes.keys()})')
+
     df = dataframes[tableIn]
 
     if 'restrict_ids_to' in output_config and column in output_config['restrict_ids_to']:
@@ -109,7 +112,7 @@ def assemble(shape, type_config, dataframes):
 
   for (type_name, config) in type_config.items():
     name = caseword(type_name) # +'s'
-    print(name)
+
     dataframes[name] = dataframes.pop(type_name)
     df = dataframes[name]
     
@@ -166,7 +169,7 @@ def assemble(shape, type_config, dataframes):
     start = timer()
     result = assemble_column(context, cmd)
     end = timer()
-    print("elapsed %ds:" % (end - start))
+    print("elapsed: %.2fs" % (end - start))
 
     # Calling assemble_column with context.current set to 'Output' should take
     # care of merging the assembled col umns with the Output dataframe.
