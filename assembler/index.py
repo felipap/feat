@@ -185,10 +185,14 @@ def assemble(shape, type_config, dataframes):
   if sorted(list(set(to_return.columns))) != sorted(to_return.columns):
     raise Exception("Duplicate features found.")
 
-
   for col in to_return.columns:
     if to_return[col].isna().any():
       print("Column %s has NaN items " % col, to_return[col].unique())
+    
+    # FIXME document this
+    if to_return[col].dtype == np.dtype('O'):
+      to_return[col] = to_return[col].astype(str)
+  
   # print('assembler is done\n\n\n')
 
   mapping = { c:date_yearmonth(cmonth_to_date(c)) for c in range(570, 650) }
