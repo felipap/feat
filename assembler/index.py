@@ -140,7 +140,7 @@ def assemble(shape, type_config, dataframes):
 
   # Must register all nodes first, and only then register the edges.
   for (type_name, config) in type_config.items():
-    if 'pointers' in config:
+    if config.get('pointers'):
       for (colOut, compose) in config['pointers'].items():
         tableIn, colIn = compose.split('.')
         print(caseword(type_name), colOut, caseword(tableIn), colIn)
