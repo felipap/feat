@@ -16,32 +16,32 @@ from brain.src.live import load_namespace
 # dataframes = loop.run_until_complete(load_namespace('verb', range(575, 593)))
 # print("elapsed: %ds" % (timer() - start))
 # pickle.dump(dataframes, open('dataframes.pickle', 'wb'))
-dataframes = pickle.load(open('dataframes.pickle', 'rb'))
+dataframes = pickle.load(open('/Users/felipe/dev/jobs_first.pickle', 'rb'))
 
 type_config = {
-  'users': {
+  'customer': {
     'pivots': ['id', 'CMONTH(date)'],
     'column_cast': {
       'created': 'datetime64[ns]',
     },
   },
-  'orders': {
+  'order': {
     'pivots': ['id'],
     'pointers': {
-      'customer': 'users.id',
+      'customer': 'customer.id',
     },
     'column_cast': {
       'date': 'datetime64[ns]',
     },
   },
-  'products': {
+  'product': {
     'pivots': ['id'],
   },
-  'order_items': {
+  'order_item': {
     'pivots': ['id'],
     'pointers': {
-      'order': 'orders.id',
-      'product': 'products.id',
+      'order': 'order.id',
+      'product': 'product.id',
     },
   },
 }
@@ -49,37 +49,38 @@ type_config = {
 shape = {
     'date_range': ['2017-11', '2019-5'],
     'features': [
-    "GREATERTHAN(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),0)",
+      "customer.flex_status",
+    # "GREATERTHAN(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),0)",
 
-    #"ACC(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(total_price|order.customer,CMONTH(order.date)))",
+    # #"ACC(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(total_price|order.customer,CMONTH(order.date)))",
 
-    "MINUSPREV(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer))",
-    "JSON_GET(customer.shipping_address,\"['state']\")",
-    "customer.school_delivery",
-    "JSON_GET(customer.flex_plans,\"['items'][0]['id']\")",
-    "TIME_SINCE(CMONTH(Users{customer=id}.created))",
+    # "MINUSPREV(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer))",
+    # "JSON_GET(customer.shipping_address,\"['state']\")",
+    # "customer.school_delivery",
+    # "JSON_GET(customer.flex_plans,\"['items'][0]['id']\")",
+    # "TIME_SINCE(CMONTH(Users{customer=id}.created))",
     
-    #"EMAIL_DOMAIN(customer.email)",
-    "DOMAIN_EXT(EMAIL_DOMAIN(customer.email))",
+    # #"EMAIL_DOMAIN(customer.email)",
+    # "DOMAIN_EXT(EMAIL_DOMAIN(customer.email))",
             
-    #Previously acc-ed !!! For some reason without FWD is being hard to train1
-    "ACC(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|order.customer,CMONTH(order.date)))",
-    "FWD(ACC(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|order.customer,CMONTH(order.date))),1)",
+    # #Previously acc-ed !!! For some reason without FWD is being hard to train1
+    # "ACC(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|order.customer,CMONTH(order.date)))",
+    # "FWD(ACC(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|order.customer,CMONTH(order.date))),1)",
     
-    #Order sums (this and prev months)
-    "Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer)",
-    "FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),1)",
-    "FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),2)",
-    "FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),3)",
+    # #Order sums (this and prev months)
+    # "Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer)",
+    # "FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),1)",
+    # "FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),2)",
+    # "FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),3)",
     
-    #Dcount since last order (prev months)
-    "Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.TSINCESEEN(CMONTH(order.date),CMONTH(order.date)|order.customer,CMONTH(order.date))",
-    ##"FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.TSINCESEEN(CMONTH(order.date),CMONTH(order.date)|order.customer,CMONTH(order.date)),1)",
+    # #Dcount since last order (prev months)
+    # "Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.TSINCESEEN(CMONTH(order.date),CMONTH(order.date)|order.customer,CMONTH(order.date))",
+    # ##"FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.TSINCESEEN(CMONTH(order.date),CMONTH(order.date)|order.customer,CMONTH(order.date)),1)",
     ],
     "output": {
       'date_block': 'CMONTH(date)',
       'pivots': ['CMONTH(date)', 'customer'],
-      'pointers': {'customer': 'Users.id', 'product': 'Products.id'}
+      'pointers': {'customer': 'customer.id'}
     },
 }
 

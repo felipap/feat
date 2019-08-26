@@ -35,7 +35,7 @@ def load_namespace_from_file(filepath):
 
 
 TYPES = {
-  "user": {
+  "customer": {
     "column_cast": {
       "created": "datetime64[ns]",
     },
@@ -48,7 +48,7 @@ TYPES = {
     },
     "pivots": ["id"],
     "pointers": {
-      "customer": "user.id",
+      "customer": "customer.id",
     },
   },
   "order_item": {
@@ -61,7 +61,7 @@ TYPES = {
   "text": {
     "pivots": ["id"],
     "pointers": {
-      "customer": "user.id",
+      "customer": "customer.id",
     },
   },
   "product": {
@@ -71,7 +71,9 @@ TYPES = {
 
 
 FEATURES = [
-  "JSON_GET(customer.flex_plans,\"['discounts'][0]\")"
+  "DAY_OF_MONTH(User{customer=id}.created)",
+  # "customer.flex_status",
+  # "JSON_GET(customer.flex_plans,\"['discounts'][0]\")"
   # "TIME_SINCE(User{customer=id}.created)",
   # "Text{CMONTH(date)=CMONTH(timestamp)}.COUNT(id|CMONTH(timestamp),customer)",
   # "Order.LATEST(JSON_GET(discounts,\"[0]['code']\")|customer,CMONTH(date))",
@@ -93,14 +95,15 @@ async def main():
   # dataframes = load_namespace_from_file('/Users/felipe/data.json')
   # dataframes['user'].rename(columns={ '__ts__': 'CMONTH(date)' }, inplace=True)
   # pickle.dump(dataframes, open('/Users/felipe/dev/assemblertest.pickle', 'wb'))
-  dataframes = pickle.load(open('/Users/felipe/dev/assemblertest.pickle', 'rb'))
+  # dataframes = pickle.load(open('/Users/felipe/dev/assemblertest.pickle', 'rb'))
+  dataframes = pickle.load(open('/Users/felipe/dev/jobs_first.pickle', 'rb'))
 
   shape = {
     'features': FEATURES,
     "output": {
       'date_block': 'CMONTH(date)',
       'pivots': ['CMONTH(date)', 'customer'],
-      'pointers': {'customer': 'user.id'}
+      'pointers': {'customer': 'customer.id'}
     },
     "date_range": ["2017-11", "2019-7"],
   }

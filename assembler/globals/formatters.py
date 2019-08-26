@@ -8,9 +8,9 @@ import pandas as pd
 import pyjson5
 from pandas.io.json import json_normalize
 
-from .lib.lib import fancy_apply, can_collapse_date, uncollapse_date, ensure_same_nrow
+from .lib.lib import fancy_apply, can_collapse_date, uncollapse_date, assert_constant_nrows
 
-@ensure_same_nrow
+@assert_constant_nrows
 def EMAIL_DOMAIN(ctx, name, args):
   child = args[0]
 
@@ -35,7 +35,7 @@ def EMAIL_DOMAIN(ctx, name, args):
   result.fill_data(df, fillnan=0)
   return result
 
-@ensure_same_nrow
+@assert_constant_nrows
 def DOMAIN_EXT(ctx, name, args):
   child = args[0]
 

@@ -108,7 +108,7 @@ class Frame(object):
 
     for (new, old) in translation:
       print("> translating pivot %s to %s" % (new, old))
-      assert old in self.df.columns, self.df.columns
+      assert old in self.df.columns, f'{old} in {self.df.columns}'
       self.df.rename(columns={ old: new }, inplace=True)
       self.pivots = list(map(lambda x: x if x != old else new, self.pivots))
 

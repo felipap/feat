@@ -77,7 +77,7 @@ def uncollapse_date(name, df, child, datefield, expand_to_original=True):
     return pd.merge(child.df[list(child.pivots)], merged, on=list(child.pivots), how='left')
   return merged
 
-def ensure_same_nrow(fn):
+def assert_constant_nrows(fn):
   @wraps(fn)
   def wrapped(ctx, name, arguments, *args, **kwargs):
     child = arguments[0]

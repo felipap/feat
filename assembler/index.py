@@ -107,14 +107,17 @@ def init_output_frame(dataframes, output_config, date_range):
 def caseword(word):
   return word[0].upper()+word[1:]
 
-def assemble(shape, type_config, dataframes):
-  dataframes['Output'] = init_output_frame(dataframes, shape['output'], shape['date_range'])
+def assemble(shape, type_config, original_dfs):
+  dataframes = {}
+
+  dataframes['Output'] = init_output_frame(original_dfs, shape['output'], shape['date_range'])
 
   for (type_name, config) in type_config.items():
     name = caseword(type_name) # +'s'
 
-    dataframes[name] = dataframes.pop(type_name)
+    dataframes[name] = original_dfs.pop(type_name)
     df = dataframes[name]
+    print("Config is", name, config)
     
     if 'CMONTH(date)' in config['pivots']:
       # TODO find a better place to make this transformation
@@ -122,6 +125,10 @@ def assemble(shape, type_config, dataframes):
       mapping = { unique: date_to_cmonth(yearmonth_date(unique)) for unique in uniques }
       dataframes[name].replace(mapping, inplace=True)
     
+    if df.empty:
+      print(f"Dataframe ${name} is empty. This will probably break things.")
+      continue
+
     if not set(config['pivots']).issubset(df.columns):
       raise Exception('Expected pivots (%s) for df %s but found columns [%s].' \
         % (config['pivots'], type_name, ', '.join(df.columns)))
@@ -156,9 +163,7 @@ def assemble(shape, type_config, dataframes):
   ######
 
   # TODO parse all before starting to assemble one-by-one.
-
   generated_columns = []
-  
   for index, feature in enumerate(shape['features']):
     # REVIEW no need to validate tree?
     cmd = parseLineToCommand(feature)
