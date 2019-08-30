@@ -15,8 +15,9 @@ from .lib.cmonth import date_to_cmonth, cmonth_to_date, date_yearmonth, yearmont
 
 
 def genMonthCount(start, end):
+  """Inclusive range."""
   curr = start
-  while curr < end:
+  while curr <= end:
     yield date_to_cmonth(curr)
     curr += relativedelta(months=1)
 
@@ -183,9 +184,6 @@ def assemble(shape, type_config, original_dfs):
     if result.name not in context.globals['Output'].columns:
       raise Exception('Something went wrong')
   
-  import pickle
-  pickle.dump(context.df, open('/Users/felipe/dev/assembler_df.pickle', 'wb'))
-
   to_return = context.df[list(shape['output']['pivots']) + generated_columns]
 
   # Assert no duplicate features (which might break things later)

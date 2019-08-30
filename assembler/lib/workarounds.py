@@ -8,7 +8,7 @@ import numpy as np
 def __get_hashable_columns(df):
   result = []
   # import pickle
-  # pickle.dump(df, open('/Users/felipe/dev/what', 'wb'))
+  # pickle.dump(df, open('./neuron_trash_what', 'wb'))
 
   # import ptvsd
   # ptvsd.enable_attach(address=('localhost', 5678), redirect_output=True)
