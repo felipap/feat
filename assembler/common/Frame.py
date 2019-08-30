@@ -67,10 +67,10 @@ class Frame(object):
     if self.df is None:
       raise Exception()
     # We only want the main column (self.name) and the pivots.
-    wantedCols = list(set([self.name]) | set(self.pivots))
-    if set(self.df.columns) != set(wantedCols):
-      print("THIS SHOULD NOT BE THE CASE.", self.df.columns, wantedCols)
-    return drop_hashable_duplicates(self.df[wantedCols])
+    wanted_cols = list(set([self.name]) | set(self.pivots))
+    if set(self.df.columns) != set(wanted_cols):
+      print("THIS SHOULD NOT BE THE CASE.", self.df.columns, wanted_cols)
+    return drop_hashable_duplicates(self.df[wanted_cols])
 
 
   def rename_pivot(self, old, new):

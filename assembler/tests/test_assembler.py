@@ -71,12 +71,20 @@ TYPES = {
 
 
 FEATURES = [
-  "DAY_OF_MONTH(User{customer=id}.created)",
+  "Order_item{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer)",
+  # "JSON_GET(customer.flex_plan,\"['items'][0]['id']\")",
+  # "CP_CHANGED(JSON_GET(customer.flex_plan,\"['items'][0]['id']\"))", 
+  # "Order.LATEST(created|customer,CMONTH(date))",
+  # "Order.LATEST(DT_DAY_OF_THE_WEEK(created)|customer,CMONTH(date))",
+  # "Order.LATEST(DT_DAY_OF_THE_MONTH(created)|customer,CMONTH(date))",
+  # "Order.LATEST(DT_MONTH_OF_THE_YEAR(created)|customer,CMONTH(date))",
+  # "DT_DAY_OF_THE_MONTH(Customer{customer=id}.created)",
+  # "DT_DAY_OF_THE_WEEK(Customer{customer=id}.created)",
+  # "DT_MONTH_OF_THE_YEAR(Customer{customer=id}.created)",
   # "customer.flex_status",
   # "JSON_GET(customer.flex_plans,\"['discounts'][0]\")"
-  # "TIME_SINCE(User{customer=id}.created)",
+  # "TIME_SINCE(Customer{customer=id}.created)",
   # "Text{CMONTH(date)=CMONTH(timestamp)}.COUNT(id|CMONTH(timestamp),customer)",
-  # "Order.LATEST(JSON_GET(discounts,\"[0]['code']\")|customer,CMONTH(date))",
   # "Order.SUM(JSON_GET(paid,\"['subtotal']\")|customer,CMONTH(date))",
   # "Order.LATEST(order_type|customer,CMONTH(date))",
   # "GREATERTHAN(Order_item{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),0)",

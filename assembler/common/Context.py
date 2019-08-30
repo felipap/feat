@@ -12,7 +12,7 @@ class Context(object):
     self.cached_frames = {}
 
   def swapIn(self, current):
-    assert current in self.globals, '%s not registered' % current
+    assert current in self.globals, f'\'{current}\' is not a registered global'
     oldCurrent = self.current
     self.current = current
     return oldCurrent

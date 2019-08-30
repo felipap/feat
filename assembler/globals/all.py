@@ -27,8 +27,9 @@ from .counts import accumulate, csince
 register_function('ACCUMULATE', accumulate, num_args=1)
 register_function('CSINCE', csince, num_args=1)
 
-from .compare import greaterthan
+from .compare import greaterthan, changed
 register_function('GREATERTHAN', greaterthan, num_args=2)
+register_function('CP_CHANGED', changed)
 
 from .stats import strend
 register_function('STREND', strend, num_args=1)
@@ -40,6 +41,11 @@ register_function('DICT_GET', DICT_GET, num_args=2)
 from .formatters import EMAIL_DOMAIN, DOMAIN_EXT
 register_function('EMAIL_DOMAIN', EMAIL_DOMAIN, num_args=1)
 register_function('DOMAIN_EXT', DOMAIN_EXT, num_args=1)
+
+from .datetime import dayofthemonth, dayoftheweek, monthoftheyear
+register_function('DT_DAY_OF_THE_MONTH', dayofthemonth, num_args=1)
+register_function('DT_DAY_OF_THE_WEEK', dayoftheweek, num_args=1)
+register_function('DT_MONTH_OF_THE_YEAR', monthoftheyear, num_args=1)
 
 def getFunction(name):
   return fns.get(name)
@@ -160,6 +166,8 @@ def call_cmonth(ctx, name, args):
     pivots.remove(name)
 
   def apply(row):
+    # if pd.isna(row[child.name]):
+    #   return np.nan
     return date_to_cmonth(datetime.strptime(row[child.name], '%Y-%m-%dT%H:%M:%S.%fZ'))
   df[name] = df.apply(apply, axis=1)
 

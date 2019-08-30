@@ -48,7 +48,7 @@ def gen_unique_product(colUniqueVals, dataframes):
 
 
 def init_output_frame(dataframes, output_config, date_range):
-
+  
   colUniqueVals = {}
   # QUESTION should we look over pointers or over pivots?
   # for column, tableField in output_config['pointers'].items():
@@ -137,6 +137,8 @@ def assemble(shape, type_config, original_dfs):
         config['pivots'],
         df[config['pivots']].shape, df.duplicated(config['pivots']).shape[0])
       dataframes[name] = df.drop_duplicates(config['pivots'])
+
+  # TODO check dangling pointers!!!!!!!! they will (sometimes silently) fuck up the features!!!!!!!!
 
   context = Context(dataframes, 'Output', shape['output']['date_block'])
 
