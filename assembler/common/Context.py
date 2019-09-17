@@ -12,6 +12,7 @@ class Context(object):
     self.cached_frames = {}
 
   def swapIn(self, current):
+    current = current.lower()
     assert current in self.globals, f'\'{current}\' is not a registered global'
     oldCurrent = self.current
     self.current = current
@@ -118,7 +119,7 @@ class Context(object):
     return copied
 
   def findGraphEdge(self, tableOut=None, colOut=None, tableIn=None, colIn=None):
-    return self.graph.find_edge(tableOut, colOut, tableIn, colIn)
+    return self.graph.find_edge(tableOut and tableOut.lower(), colOut, tableIn and tableIn.lower(), colIn)
 
   def getGraphLeafInformation(self, current, column):
     return self.graph.get_leaf_information(current, column)

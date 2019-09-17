@@ -1,11 +1,24 @@
 
+import re
+
+def caseword(word):
+  return word[0].upper()+word[1:]
+
+RE_POINTER = re.compile('^\w+\.\w+$')
 
 class Graph(object):
+  """ asdf """
 
   def __init__(self):
     self.nodes = []
     self.pivots = dict()
     self.edges = []
+
+    ####
+
+    self.tables = {}
+    self.output = None
+    self.built_edges = False
 
 
   def add_node(self, name, pivots=[]):
@@ -13,9 +26,54 @@ class Graph(object):
       print("Warn: pivots is empty")
     if name in self.nodes:
       raise Exception('Node %s already registered.' % name)
+    
     self.nodes.append(name)
     self.pivots[name] = pivots
 
+
+  def add_table(self, table):
+    if not table.name.islower():
+      raise Exception('Table names must be lowercase.')
+    if table.name in self.tables:
+      raise Exception()
+    self.tables[table.name] = table
+
+    self.add_node(table.name, table.get_keys())
+
+  def build_edges(self):
+    if self.built_edges:
+      raise Exception()
+    self.built_edges = True
+    
+    # Must register all nodes first, and only then register the edges.
+
+    for name, table in self.tables.items():
+      pointers = table.get_pointers()
+      if not pointers:
+        continue
+      for out_column, pointer in pointers.items():
+        if not RE_POINTER.match(pointer):
+          raise Exception()
+
+        in_table, in_column = pointer.split('.')
+        self.add_edge(table.name, out_column, in_table, in_column)
+
+    if not self.output:
+      raise Exception('build_edges() must be called after add_output()')
+
+    for (field, pointer) in self.output.get_pointers().items():
+      in_table, in_column = pointer.split('.')
+      self.add_edge('output', field, in_table, in_column)
+
+      print("intable", in_table, in_column)
+
+  def add_output(self, output):
+    if self.output:
+      raise Exception()
+    self.output = output
+    self.add_node('output', [output.DATE_FIELD, *output.get_pointers().keys()])
+
+  ###
 
   def add_edge(self, tableOut, colOut, tableIn, colIn):
     assert tableOut in self.nodes, "%s not a registered node" % tableOut

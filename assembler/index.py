@@ -7,18 +7,28 @@ import numpy as np
 
 from .common.Context import Context
 from .common.Graph import Graph
+from .common.Table import Table
+from .common.Output import Output
 from .lib.gen_cartesian import gen_cartesian
 from .assembler import assemble_column
 from .parser import parseLineToCommand
 from .lib.state import save_state
 from .lib.cmonth import date_to_cmonth, cmonth_to_date, date_yearmonth, yearmonth_date
-
+from .graph_config import GraphConfig
 
 def genMonthCount(start, end):
   """Inclusive range."""
   curr = start
   while curr <= end:
     yield date_to_cmonth(curr)
+    curr += relativedelta(months=1)
+
+
+def genMonthRange(start, end):
+  """Inclusive range."""
+  curr = start
+  while curr <= end:
+    yield curr
     curr += relativedelta(months=1)
 
 
@@ -62,6 +72,7 @@ def init_output_frame(dataframes, output_config, date_range):
     tableField = output_config['pointers'][column]
     tableIn, keyIn = tableField.split('.')
 
+    tableIn = caseword(tableIn)
     if tableIn not in dataframes:
       raise Exception(f'Expected to find \'{tableIn}\' in dataframes object (keys {dataframes.keys()})')
 
@@ -108,69 +119,86 @@ def init_output_frame(dataframes, output_config, date_range):
 def caseword(word):
   return word[0].upper()+word[1:]
 
-def assemble(shape, type_config, original_dfs):
+
+def _gen_date_range(date_range):
+  """Inclusive range."""
+  start = datetime.strptime(date_range[0], '%Y-%m')
+  end = datetime.strptime(date_range[1], '%Y-%m')
+
+  result = []
+  curr = start
+  while curr <= end:
+    result.append(curr)
+    curr += relativedelta(months=1)
+  return result
+
+
+def assemble(features, config, table_configs, dataframes):
+  """
+  Use the input dataframes and configurations to create the tables and
+  initialize the data graph.
+  """
+
+  graph = Graph()
+  for table_name, table_config in table_configs.items():
+    # Check that the dataframe for this table has been supplied.
+    if not table_name in dataframes:
+      raise Exception(f'Dataframe for table {table_name} was not supplied.')
+
+    table = Table(table_name, table_config, dataframes.pop(table_name))
+    graph.add_table(table)
+
+  output = Output(graph.tables, config['pointers'], _gen_date_range(config['date_range']))
+  graph.add_output(output)
+  graph.build_edges()
+
+
+  print("OUTPUT ADDEDE")
+
   dataframes = {}
+  for table in graph.tables.values():
+    dataframes[table.name] = table.get_dataframe()
 
-  dataframes['Output'] = init_output_frame(original_dfs, shape['output'], shape['date_range'])
+  # dataframes['output'] = init_output_frame(dataframes, config, config['date_range'])
+  dataframes['output'] = output.get_dataframe()
+  print(dataframes['output'])
 
-  for (type_name, config) in type_config.items():
-    name = caseword(type_name) # +'s'
 
-    dataframes[name] = original_dfs.pop(type_name)
-    df = dataframes[name]
-    print("Config is", name, config)
-    
-    if 'CMONTH(date)' in config['pivots']:
-      # TODO find a better place to make this transformation
-      uniques = dataframes[name]['CMONTH(date)'].unique()
-      mapping = { unique: date_to_cmonth(yearmonth_date(unique)) for unique in uniques }
-      dataframes[name].replace(mapping, inplace=True)
-    
-    if df.empty:
-      print(f"Dataframe ${name} is empty. This will probably break things.")
-      continue
 
-    if not set(config['pivots']).issubset(df.columns):
-      raise Exception('Expected pivots (%s) for df %s but found columns [%s].' \
-        % (config['pivots'], type_name, ', '.join(df.columns)))
-    if df.duplicated(config['pivots']).any():
-      print("Dropping duplicates in df %s" % type_name, \
-        config['pivots'],
-        df[config['pivots']].shape, df.duplicated(config['pivots']).shape[0])
-      dataframes[name] = df.drop_duplicates(config['pivots'])
 
   # TODO check dangling pointers!!!!!!!! they will (sometimes silently) fuck up the features!!!!!!!!
 
-  context = Context(dataframes, 'Output', shape['output']['date_block'])
+  context = Context(dataframes, 'output', config['date_block'])
 
   # Create graph of connections between tables.
-  context.graph = Graph()
-  for (type_name, config) in type_config.items():
-    context.graph.add_node(caseword(type_name), pivots=config['pivots'])
+  # for (type_name, table_config) in table_configs.items():
+  #   graph.add_node(caseword(type_name), pivots=table_config['pivots'])
 
-  # Must register all nodes first, and only then register the edges.
-  for (type_name, config) in type_config.items():
-    if config.get('pointers'):
-      for (colOut, compose) in config['pointers'].items():
-        tableIn, colIn = compose.split('.')
-        print(caseword(type_name), colOut, caseword(tableIn), colIn)
-        context.graph.add_edge(caseword(type_name), colOut, caseword(tableIn), colIn)
+  # # Must register all nodes first, and only then register the edges.
+  # for (type_name, table_config) in table_configs.items():
+  #   if table_config.get('pointers'):
+  #     for (colOut, compose) in table_config['pointers'].items():
+  #       tableIn, colIn = compose.split('.')
+  #       print(caseword(type_name), colOut, caseword(tableIn), colIn)
+  #       graph.add_edge(caseword(type_name), colOut, caseword(tableIn), colIn)
   
-  context.graph.add_node('Output', pivots=shape['output']['pivots'])
-  for val, key in shape['output']['pointers'].items():
-    colOut, tableIn, colIn = (val,*key.split('.'))
-    context.graph.add_edge('Output', colOut, caseword(tableIn), colIn)
+  # graph.add_node('Output', pivots=config['pivots'])
+  # for val, key in config['pointers'].items():
+  #   colOut, tableIn, colIn = (val,*key.split('.'))
+  #   graph.add_edge('Output', colOut, caseword(tableIn), colIn)
 
-  print("Context graph is", context.graph)
+  print("Context graph is", graph)
+
+  context.graph = graph
 
   ######
 
   # TODO parse all before starting to assemble one-by-one.
   generated_columns = []
-  for index, feature in enumerate(shape['features']):
+  for index, feature in enumerate(features):
     # REVIEW no need to validate tree?
     cmd = parseLineToCommand(feature)
-    print('\nProcessing {}/{}: {}'.format(index+1, len(shape['features']), cmd['name']))
+    print('\nProcessing {}/{}: {}'.format(index+1, len(features), cmd['name']))
 
     generated_columns.append(cmd['name'])
 
@@ -184,7 +212,7 @@ def assemble(shape, type_config, original_dfs):
     if result.name not in context.globals['Output'].columns:
       raise Exception('Something went wrong')
   
-  to_return = context.df[list(shape['output']['pivots']) + generated_columns]
+  to_return = context.df[list(config['pivots']) + generated_columns]
 
   # Assert no duplicate features (which might break things later)
   if sorted(list(set(to_return.columns))) != sorted(to_return.columns):
