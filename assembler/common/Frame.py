@@ -10,15 +10,19 @@ class Frame(object):
   """
   """
 
-  def __init__(self, name, table_name, pivots, fillnan=None, dtype=None):
+  def __init__(self, name, table, pivots, fillnan=None, dtype=None):
     """
     Note that pivots might include the own column name. If an Orders table has a
     compose key (buyer, product, time), a frame containing just the column
     product has all these three columns as pivot.
     """
+
+    if not table:
+      raise Exception()
+
     assert type(name) == str
     assert type(pivots) != str # This happens a lot.
-    self.table_name = table_name
+    self.table = table
 
     self.pivots: Set[str] = set(pivots)
     self.name = name
@@ -28,15 +32,21 @@ class Frame(object):
 
 
   def __repr__(self):
-    return 'Frame(%s.%s|%s)' % (self.table_name, self.name, self.pivots)
+    return 'Frame(%s.%s|%s)' % (self.table, self.name, self.pivots)
 
 
   def get_pivots(self):
     return self.pivots
 
+  def get_time_col(self):
+    if '__date__' in self.df.columns:
+      return '__date__'
+    elif 'DATE(date)' in self.df.columns:
+      return 'DATE(date)'
+    raise Exception('WTF')
 
   def copy(self):
-    frame = Frame(self.name, self.table_name, self.pivots)
+    frame = Frame(self.name, self.table, self.pivots)
     frame.fillnan = self.fillnan
     frame.dtype = self.dtype
     frame.df = self.df.copy()
@@ -115,6 +125,10 @@ class Frame(object):
         if pivot.startswith('CMONTH'):
           print(f'Inferring {pivot} to translate to {DATE_FIELD}')
           forced_translation[DATE_FIELD] = pivot
+        # TODO get rid of this
+        if pivot.startswith('DATE'):
+          print(f'Inferring {pivot} to translate to {DATE_FIELD}')
+          forced_translation[DATE_FIELD] = pivot
       if forced_translation:   
         translation = forced_translation
     assert translation, "A translation is required for column %s" % self.name
@@ -138,9 +152,9 @@ class Frame(object):
     #     continue
     #
     #   # print(current, tableIn, colIn, ctx.pointers)
-    #   info = ctx.getGraphLeafInformation(self.table_name, col)
+    #   info = ctx.graph.get_leaf_information(self.table_name, col)
     #   if not info:
-    #     raise Exception('getGraphLeafInformation failed', self.table_name, col)
+    #     raise Exception('graph.get_leaf_information failed', self.table_name, col)
     #   tableIn, colIn = info
     #
     #   pointers = ctx.findGraphEdge(tableOut=current, tableIn=tableIn, colIn=colIn)

@@ -7,6 +7,7 @@ import numpy as np
 from timeit import default_timer as timer
 import itertools
 from functools import reduce
+from .Table import Table
 
 from ..lib.cmonth import date_to_cmonth, cmonth_to_date, date_yearmonth, yearmonth_date
 
@@ -43,10 +44,10 @@ def caseword(word):
   return word[0].upper()+word[1:]
 
 
-RE_POINTER = re.compile('^\w+\.\w+$')
+RE_POINTER = re.compile(r'^\w+\.\w+$')
 DATE_FIELD = '__date__'
 
-class Output(object):
+class Output(Table):
   """ TODO """
 
   DATE_FIELD = DATE_FIELD
@@ -69,7 +70,7 @@ class Output(object):
     # for each product id), so we can scaffold an output dataframe.
 
     unique_values = {}
-    for column, in_pointer in pointers.items():
+    for in_pointer in pointers.values():
       if not RE_POINTER.match(in_pointer):
         raise Exception(f'Unexpected pointer format of {in_pointer}')
       
@@ -85,7 +86,7 @@ class Output(object):
       uniques[field.lower()] = list(set(dataframes[t][f].unique()))
       """
 
-      uniques = table.get_unique_field(field)
+      uniques = table.get_unique_values(field)
       unique_values[table_name] = uniques
 
       print(f'Unique values for {table_name}.{field}: ({len(uniques)} items)')
@@ -94,22 +95,18 @@ class Output(object):
     # REVIEW
     unique_values[DATE_FIELD] = list(map(date_to_cmonth, dates))
 
-    print("Using date range", dates, unique_values[DATE_FIELD], len(dates))
+    # print("Using date range", dates, unique_values[DATE_FIELD], len(dates))
 
     sizes = map(len, unique_values.values())
     output_size = reduce(lambda x, y: x*y, sizes)
 
-    print("Generating output of size", output_size)
+    # print("Generating output of size", output_size)
     assert output_size < 50*1000*1000, "Output is too big!"
 
     product = _gen_product(unique_values.values())
 
     dataframe = pd.DataFrame(product)
     dataframe.columns = list(unique_values.keys())
-
-    print(dataframe)
-    self._dataframe = dataframe
-    self._pointers = pointers
 
     # Output.sort_values([config['date_block'],'location','product'], inplace=True)
 
@@ -129,9 +126,10 @@ class Output(object):
     # It would be int16, after concatination with NaN values it becomes
     # int64, but foat16 becomes float16 even with NaNs.
 
-  def get_pointers(self):
-    return self._pointers
-
-  def get_dataframe(self):
-    return self._dataframe
-
+    Table.__init__(self,
+      'output',
+      dataframe,
+      list(pointers.keys()),
+      pointers,
+      DATE_FIELD,
+    )

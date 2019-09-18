@@ -3,35 +3,35 @@ from .Frame import Frame
 import pandas as pd
 
 class Context(object):
-  def __init__(self, globals, current, timeCol):
+  def __init__(self, graph, output):
+    self.output = output
+    self.graph = graph
+    
     self.current = None
-    self.globals = globals
-    self.original_columns = {name: val.columns for (name, val) in globals.items()}
-    self.swapIn(current)
-    self.timeCol = timeCol
+    self.swap_in('output')
     self.cached_frames = {}
 
-  def swapIn(self, current):
+  def swap_in(self, current):
     current = current.lower()
-    assert current in self.globals, f'\'{current}\' is not a registered global'
-    oldCurrent = self.current
+    assert current in self.graph.tables, f'\'{current}\' is not a registered table'
+    old = self.current
     self.current = current
-    return oldCurrent
+    return old
+
+  @property
+  def table(self):
+    return self.graph.get_table(self.current)
 
   @property
   def df(self):
-    # print("fs is", self.current, self.globals)
-    return self.globals[self.current]
+    return self.graph.get_table(self.current).get_dataframe()
 
   @df.setter
   def df(self, value):
-    self.globals[self.current] = value
+    self.graph.get_table(self.current).set_dataframe(value)
 
   def get_date_range(self):
-    return sorted(self.globals['output']['__date__'].unique())
-
-  def get_pivots_for_table(self, tableName):
-    return self.graph.pivots[tableName]
+    return sorted(self.graph.get_table('output').get_dataframe()['__date__'].unique())
 
   def get_cached_frame(self, name):
     if not name in self.cached_frames:
@@ -40,10 +40,7 @@ class Context(object):
 
   def create_subframe(self, colName, pivots):
     """Creates a frame derived from the self.current dataframe"""
-    return Frame(colName, self.current, pivots)
-
-  def currHasColumn(self, colName):
-    return colName in self.df.columns
+    return Frame(colName, self.graph.get_table(self.current), pivots)
 
   def merge_frame_with_df(self, frame, on=None, right_on=None, left_on=None):
     if on:
@@ -80,22 +77,31 @@ class Context(object):
         how=how, \
         suffixes=(False, False))
     else:
+      # Merge frame into self.df where self.df[left_on] == frame[right_on].
+
       copied_frame = frame.copy()
       copied_frame.rename_pivot(right_on, '__JOIN__')
-
       copied_frame_df = copied_frame.get_stripped()
 
       columns_overlap = set(copied_frame_df.columns).intersection(self.df.columns)
+
+      # if frame has columns ['id', 'CMONTH(date)'] and self.df has
+      # columns ['customer', '__date__'], then we should throw an error! instead
+      # of just merging on self.df.customer=frame.id.
+      for pivot in frame.pivots:
+        if pivot != right_on and not pivot in columns_overlap:
+          raise Exception(f'Pivot {pivot} of {frame.name} not considered in merger')
+      
       right_on = '__JOIN__'
 
       outer_pivots = [left_on]
       if columns_overlap:
-        assert len(columns_overlap) == 1 # Just for debugging now, this should be deleted!
+        assert len(columns_overlap) == 1 # Just for debugging now, this should be dealt with!!!
         overlap = columns_overlap.pop()
         outer_pivots += [overlap]
         right_on = [right_on, overlap]
         left_on = [left_on, overlap]
-
+    
       
       self.df = pd.merge(self.df, \
         copied_frame_df, \
@@ -117,9 +123,3 @@ class Context(object):
     self.cached_frames[frame.name] = copied
 
     return copied
-
-  def findGraphEdge(self, tableOut=None, colOut=None, tableIn=None, colIn=None):
-    return self.graph.find_edge(tableOut and tableOut.lower(), colOut, tableIn and tableIn.lower(), colIn)
-
-  def getGraphLeafInformation(self, current, column):
-    return self.graph.get_leaf_information(current, column)

@@ -18,8 +18,7 @@ class Graph(object):
 
     self.tables = {}
     self.output = None
-    self.built_edges = False
-
+    self._wrapped = False
 
   def add_node(self, name, pivots=[]):
     if not pivots:
@@ -30,6 +29,18 @@ class Graph(object):
     self.nodes.append(name)
     self.pivots[name] = pivots
 
+  def wrap(self):
+    if self._wrapped:
+      raise Exception()
+    self._wrapped = True
+    
+    self._build_edges()
+    self._check_dangling_pointers()
+
+  def _check_dangling_pointers(self):
+    print("CHECK DANGLING POINTERS")
+    # TODO check dangling pointers!!!!!!!! they will (sometimes silently) fuck up the features!!!!!!!!
+    return
 
   def add_table(self, table):
     if not table.name.islower():
@@ -40,11 +51,7 @@ class Graph(object):
 
     self.add_node(table.name, table.get_keys())
 
-  def build_edges(self):
-    if self.built_edges:
-      raise Exception()
-    self.built_edges = True
-    
+  def _build_edges(self):    
     # Must register all nodes first, and only then register the edges.
 
     for name, table in self.tables.items():
@@ -65,12 +72,17 @@ class Graph(object):
       in_table, in_column = pointer.split('.')
       self.add_edge('output', field, in_table, in_column)
 
-      print("intable", in_table, in_column)
+  def get_table(self, name):
+    # if name == 'output':
+    #   return self.output
+    return self.tables[name]
 
   def add_output(self, output):
     if self.output:
       raise Exception()
     self.output = output
+    self.tables['output'] = output
+
     self.add_node('output', [output.DATE_FIELD, *output.get_pointers().keys()])
 
   ###
@@ -80,8 +92,10 @@ class Graph(object):
     assert tableIn in self.nodes, "%s not a registered node" % tableIn
     self.edges.append([tableOut, colOut, tableIn, colIn])
 
-
   def find_edge(self, tableOut=None, colOut=None, tableIn=None, colIn=None):
+    tableOut = tableOut.lower()
+    tableIn = tableIn.lower()
+    
     if tableOut:
       assert tableOut in self.nodes, "%s not a registered node" % tableOut
     if tableIn:

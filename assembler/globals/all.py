@@ -52,15 +52,14 @@ def getFunction(name):
 
 #
 
-def call_fwd(ctx, name, args, pivots):
+def call_shift(ctx, name, args, pivots):
   lag = args[1]
   child = args[0]
-  time_col = 'CMONTH(date)'
 
   shifted = child.get_stripped()
   shifted.rename(columns={ child.name: name }, inplace=True)
 
-  shifted[time_col] += lag
+  shifted[child.get_time_col()] += lag
 
   # shifted[time_col] = shifted[time_col].astype(np.int64)
 
@@ -72,7 +71,7 @@ def call_fwd(ctx, name, args, pivots):
   result.fill_data(shifted, child.fillnan)
   return result
 
-register_function('SHIFT', call_fwd, num_args=2, takes_pivots=True)
+register_function('SHIFT', call_shift, num_args=2, takes_pivots=True)
 
 #f
 
@@ -91,7 +90,7 @@ register_function('GET', call_get, num_args=1, takes_pivots=True)
 
 def call_minusprev(ctx, name, args, pivots):
   child = args[0]
-  time_col = 'CMONTH(date)'
+  time_col = child.get_time_col()
   
   if pivots:
     raise NotImplementedError()
@@ -176,6 +175,31 @@ def call_cmonth(ctx, name, args):
   return result
 
 register_function('CMONTH', call_cmonth, num_args=1)
+
+def call_date(ctx, name, args):
+  child = args[0]
+
+  # print('date is', child.get_stripped().columns, name, child.name)
+
+  df = child.get_stripped()
+
+  pivots = child.get_pivots()
+  if name in pivots:
+    assert can_collapse_date(child, name)
+    df = df.drop(name, axis=1).drop_duplicates()
+    pivots.remove(name)
+
+  def apply(row):
+    # if pd.isna(row[child.name]):
+    #   return np.nan
+    return date_to_cmonth(datetime.strptime(row[child.name], '%Y-%m-%dT%H:%M:%S.%fZ'))
+  df[name] = df.apply(apply, axis=1)
+
+  result = ctx.create_subframe(name, pivots)
+  result.fill_data(df)
+  return result
+
+register_function('DATE', call_date, num_args=1)
 
 #
 
@@ -292,8 +316,8 @@ def call_accumulate(ctx, name, args):
   Eg. if there were orders in October and December, but none in November, a
   count for November must still show up (with the same value as October).
   """
-  time_col = 'CMONTH(date)' # args[2].name
   child = args[0]
+  time_col = child.get_time_col() # 'CMONTH(date)' # args[2].name
   pivots = list(child.pivots)
 
   original = child.get_stripped()

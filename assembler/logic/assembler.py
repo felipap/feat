@@ -9,7 +9,8 @@ import pandas as pd
 
 import sys
 sys.path.append('..')
-from ..common import Context, Frame, assert_returns_frame
+from ..common import Frame, assert_returns_frame
+from ..parser import Tree
 from ..globals import getFunction
 
 def assemble_column_log_errors(inner):
@@ -78,8 +79,8 @@ def fetch_existing_subframe(ctx, tree):
   # need to create a Frame() using ['CMONTH(date)', 'shop'] as pivots.
 
   # Original columns of the dataframe have the table pivots as their pivot.
-  if tree['name'] in ctx.original_columns[ctx.current]:
-    result = ctx.create_subframe(tree['name'], ctx.get_pivots_for_table(ctx.current))
+  if tree['name'] in ctx.table.get_original_columns():
+    result = ctx.create_subframe(tree['name'], ctx.table.get_keys())
     result.fill_data(ctx.df)
     return result
 
@@ -93,9 +94,9 @@ def fetch_existing_subframe(ctx, tree):
 
 @assemble_column_log_errors
 @assert_returns_frame
-def assemble_column(ctx, tree):
+def assemble_column(ctx, tree):  
   # If column was already generated, stop.
-  if ctx.currHasColumn(tree.get('name')):
+  if ctx.table.has_column(tree.get('name')):
     return fetch_existing_subframe(ctx, tree)
 
   is_function = 'function' in tree
@@ -110,7 +111,7 @@ def assemble_column(ctx, tree):
       # result.fill_data(ctx.df)
       # return result
     result = assemble_function(ctx, tree)
-    if not ctx.currHasColumn(result.name):
+    if not ctx.table.has_column(result.name):
       ctx.merge_frame_with_df(result, on=list(result.pivots))
 
     return result
@@ -122,9 +123,9 @@ def assemble_column(ctx, tree):
   assert 'next' in tree, "Non-terminal notes must have a child"
 
   if tree.get('root'):
-    prev_current = ctx.swapIn(tree['root'])
+    prev_current = ctx.swap_in(tree['root'])
     child = assemble_column(ctx, tree['next'])
-    ctx.swapIn(prev_current)
+    ctx.swap_in(prev_current)
 
     if tree.get('translation'):
       mapping = tree['translation'].get('map_str')
@@ -156,19 +157,19 @@ def assemble_column(ctx, tree):
   key_out = tree['this']
 
   # Find table and key to join into from context.
-  rel = ctx.findGraphEdge(tableOut=table_out, colOut=key_out)
+  rel = ctx.graph.find_edge(tableOut=table_out, colOut=key_out)
   if not rel:
     raise Exception('Relationship at %s.%s not found' % (table_out, key_out))
   [_, _, tableIn, keyIn] = rel[0]
 
   # Execute child with context of tableIn.
-  ctx.swapIn(tableIn)
+  ctx.swap_in(tableIn)
   child = assemble_column(ctx, tree['next'])
-  ctx.swapIn(table_out)
+  ctx.swap_in(table_out)
 
   child.rename(tree['name'])
 
-  if ctx.currHasColumn(child.name):
+  if ctx.table.has_column(child.name):
     # Not expected, as the condition of it already being in columns should've
     # triggered the `tree['name'] in ctx.df.columns` check above.
     raise Exception()
