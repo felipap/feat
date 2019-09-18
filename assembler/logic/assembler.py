@@ -128,6 +128,7 @@ def assemble_column(ctx, tree):
 
     if tree.get('translation'):
       mapping = tree['translation'].get('map_str')
+      mapping = dict(mapping)
     else:
       mapping = None
     child.translate_pivots_root(ctx, ctx.current, mapping)

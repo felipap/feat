@@ -70,7 +70,44 @@ TYPES = {
 
 
 FEATURES = [
+  "STREND(Order.COUNT(id|CMONTH(date),customer))",
   "Order_item{__date__=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer)",
+  "Order.LATEST(JSON_GET(discounts,\"[0]['code']\")|customer,CMONTH(date))",
+  "Order.LATEST(JSON_GET(refund,\"[0]['status']\")|customer,CMONTH(date))",
+  "customer.school_delivery",
+  "customer.source",
+  "JSON_GET(customer.flex_plan,\"['items'][0]['id']\")",
+  "JSON_GET(customer.flex_plan,\"['items'][0]['quantity']\")",
+  "JSON_GET(customer.flex_plan,\"['items'][0]['flavor']\")",
+  "customer.flex_status",
+  "SHIFT(customer.flex_status,1)",
+  "SHIFT(customer.flex_status,2)",
+  "JSON_GET(customer.shipping_address,\"['state']\")",
+  "GREATERTHAN(Order_item{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),0)",
+  "ACCUMULATE(CSINCE(Order.COUNT(id|customer,CMONTH(date))))",
+  "CSINCE(Order.COUNT(id|customer,CMONTH(date)))",
+  "SHIFT(CSINCE(Order.COUNT(id|customer,CMONTH(date))),1)",
+  "SHIFT(CSINCE(Order.COUNT(id|customer,CMONTH(date))),2)",
+  "TIME_SINCE(Customer{customer=id}.created)",
+  "DOMAIN_EXT(EMAIL_DOMAIN(customer.email))",
+  "ACCUMULATE(Order_item{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|order.customer,CMONTH(order.date)))",
+  "SHIFT(ACCUMULATE(Order_item{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|order.customer,CMONTH(order.date))),1)",
+  "Order_item{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer)",
+  "SHIFT(Order_item{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),1)",
+  "SHIFT(Order_item{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),2)",
+  "Order_item{CMONTH(date)=CMONTH(order.date);customer=order.customer}.TSINCESEEN(CMONTH(order.date),CMONTH(order.date)|order.customer,CMONTH(order.date))",
+  "SHIFT(Order_item{CMONTH(date)=CMONTH(order.date);customer=order.customer}.TSINCESEEN(CMONTH(order.date),CMONTH(order.date)|order.customer,CMONTH(order.date)), 1)",
+  "Order.SUM(JSON_GET(paid,\"['subtotal']\")|customer,CMONTH(date))",
+  "Order.SUM(JSON_GET(paid,\"['discountTotal']\")|customer,CMONTH(date))",
+  "Order.LATEST(order_type|customer,CMONTH(date))",
+  "Order.LATEST(source|customer,CMONTH(date))",
+  "Order.LATEST(JSON_GET(shipping,\"['shippingType']\")|customer,CMONTH(date))",
+  "Order.LATEST(DT_DAY_OF_THE_WEEK(created)|customer,CMONTH(date))",
+  "Order.LATEST(DT_DAY_OF_THE_MONTH(created)|customer,CMONTH(date))",
+  "Order.LATEST(DT_MONTH_OF_THE_YEAR(created)|customer,CMONTH(date))",
+  "CP_CHANGED(JSON_GET(customer.flex_plan,\"['items'][0]['id']\"))",
+  "CP_CHANGED(JSON_GET(customer.flex_plan,\"['items'][0]['quantity']\"))",
+  "CP_CHANGED(JSON_GET(customer.flex_plan,\"['items'][0]['flavor']\"))",
 ]
 
 
@@ -89,7 +126,6 @@ async def main():
     "date_range": ["2017-11", "2019-7"],
   }
   
-  print(assembler)
   result = assembler.assemble(FEATURES, config, TYPES, dataframes)
   pickle.dump(result, open('./neuron_trash_assemblertest_result.pickle', 'wb'))
   result = pickle.load(open('./neuron_trash_assemblertest_result.pickle', 'rb'))

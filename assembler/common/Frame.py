@@ -1,7 +1,10 @@
 import pandas as pd
 import copy
+from typing import Dict, List, Set
 
 from ..lib.workarounds import drop_hashable_duplicates
+
+DATE_FIELD = '__date__'
 
 class Frame(object):
   """
@@ -17,7 +20,7 @@ class Frame(object):
     assert type(pivots) != str # This happens a lot.
     self.table_name = table_name
 
-    self.pivots = set(pivots)
+    self.pivots: Set[str] = set(pivots)
     self.name = name
     self.df = None
     self.fillnan = fillnan
@@ -95,27 +98,41 @@ class Frame(object):
 
   def translate_pivots_root(self, ctx, current, translation):
     """
-      # TODO
-      # If a pivot in result is 'order.user' and if 'user' (ie. 'Users.id')
-      # is a pivot of Output, we have to rename 'order.user' somehow to make it
-      # work.
+    # TODO
+    # If a pivot in result is 'order.user' and if 'user' (ie. 'Users.id')
+    # is a pivot of Output, we have to rename 'order.user' somehow to make it
+    # work.
     """
-
+ 
     if set(self.pivots).issubset(ctx.df.columns):
+      # Nothing to do here.
       return
 
+    # if current == 'output':
+    if not translation:
+      forced_translation: Dict[str, str] = {}
+      for pivot in self.pivots:
+        if pivot.startswith('CMONTH'):
+          print(f'Inferring {pivot} to translate to {DATE_FIELD}')
+          forced_translation[DATE_FIELD] = pivot
+      if forced_translation:   
+        translation = forced_translation
     assert translation, "A translation is required for column %s" % self.name
 
-    for (new, old) in translation:
+    replace = {}
+    for new, old in translation.items():
       print("> translating pivot %s to %s" % (new, old))
       assert old in self.df.columns, f'{old} in {self.df.columns}'
-      self.df.rename(columns={ old: new }, inplace=True)
+          
+      replace[old] = new
       self.pivots = list(map(lambda x: x if x != old else new, self.pivots))
+    
+    self.df.rename(columns=replace, inplace=True)
 
     # print("translation!", self.pivots, self.df.columns)
 
     # NOTE Code below is good, but it implements inferred translation. Code
-    # above implements explicit translation (uses Table<a=b> syntax).
+    # above implements explicit translation (uses Table{a=b} syntax).
     # for col in self.pivots.copy():
     #   if col == 'CMONTH(date)':
     #     continue

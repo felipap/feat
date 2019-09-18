@@ -32,7 +32,7 @@ def make_pergroup(innerfn, fillna=0):
       "date_counts": date_counts,
       "fn": innerfn,
       # TODO SUPPORT PIVOTS
-      "time_col": "CMONTH(date)",
+      "time_col": "__date__", # "CMONTH(date)",
     } for dc in df_chunks]
 
     start = timer()

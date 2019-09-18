@@ -28,7 +28,7 @@ class Context(object):
     self.globals[self.current] = value
 
   def get_date_range(self):
-    return sorted(self.globals['Output'][self.timeCol].unique())
+    return sorted(self.globals['output']['__date__'].unique())
 
   def get_pivots_for_table(self, tableName):
     return self.graph.pivots[tableName]

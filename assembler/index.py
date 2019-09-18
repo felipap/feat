@@ -10,7 +10,7 @@ from .common.Graph import Graph
 from .common.Table import Table
 from .common.Output import Output
 from .lib.gen_cartesian import gen_cartesian
-from .assembler import assemble_column
+from .logic import assemble_column
 from .parser import parseLineToCommand
 from .lib.state import save_state
 from .lib.cmonth import date_to_cmonth, cmonth_to_date, date_yearmonth, yearmonth_date
@@ -102,7 +102,7 @@ def init_output_frame(dataframes, output_config, date_range):
   # aggreagates, then <b>clip(0,20)</b> target value. This way train
   # target will be similar to the test predictions.
 
-  # felipap: add item_ctn_month column to 'Output'
+  # felipap: add item_ctn_month column to 'output'
   # Output = pd.merge(Output, group, on=cols, how='left')
   # Output['item_cnt_month'] = (Output['item_cnt_month']
   #                                 .fillna(0)
@@ -148,7 +148,8 @@ def assemble(features, config, table_configs, dataframes):
     table = Table(table_name, table_config, dataframes.pop(table_name))
     graph.add_table(table)
 
-  output = Output(graph.tables, config['pointers'], _gen_date_range(config['date_range']))
+  date_range = _gen_date_range(config['date_range'])
+  output = Output(graph.tables, config['pointers'], date_range)
   graph.add_output(output)
   graph.build_edges()
 
@@ -182,10 +183,10 @@ def assemble(features, config, table_configs, dataframes):
   #       print(caseword(type_name), colOut, caseword(tableIn), colIn)
   #       graph.add_edge(caseword(type_name), colOut, caseword(tableIn), colIn)
   
-  # graph.add_node('Output', pivots=config['pivots'])
+  # graph.add_node('output', pivots=config['pivots'])
   # for val, key in config['pointers'].items():
   #   colOut, tableIn, colIn = (val,*key.split('.'))
-  #   graph.add_edge('Output', colOut, caseword(tableIn), colIn)
+  #   graph.add_edge('output', colOut, caseword(tableIn), colIn)
 
   print("Context graph is", graph)
 
@@ -207,12 +208,12 @@ def assemble(features, config, table_configs, dataframes):
     end = timer()
     print("elapsed: %.2fs" % (end - start))
 
-    # Calling assemble_column with context.current set to 'Output' should take
+    # Calling assemble_column with context.current set to 'output' should take
     # care of merging the assembled col umns with the Output dataframe.
-    if result.name not in context.globals['Output'].columns:
+    if result.name not in context.globals['output'].columns:
       raise Exception('Something went wrong')
   
-  to_return = context.df[list(config['pivots']) + generated_columns]
+  to_return = context.df[list(output.get_pointers().keys()) + ['__date__'] + generated_columns]
 
   # Assert no duplicate features (which might break things later)
   if sorted(list(set(to_return.columns))) != sorted(to_return.columns):
@@ -230,6 +231,6 @@ def assemble(features, config, table_configs, dataframes):
 
   mapping = { c:date_yearmonth(cmonth_to_date(c)) for c in range(570, 650) }
   print("map is", mapping)
-  to_return['CMONTH(date)'] = to_return['CMONTH(date)'].replace(mapping)
+  to_return['CMONTH(date)'] = to_return['__date__'].replace(mapping)
 
   return to_return
