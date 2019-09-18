@@ -4,7 +4,6 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import pandas as pd
 import numpy as np
-from timeit import default_timer as timer
 import itertools
 from functools import reduce
 from .Table import Table

@@ -7,8 +7,10 @@ import numpy as np
 import pandas as pd
 
 def split_respecting_boundaries(records, keys, num_split=10):
-  """Split an array of records semi-evenly while respecting that records with
-  the same keys should not be in separate chunks."""
+  """
+  Split an array of records in `num_split` semi-even chunks, while respecting
+  that records with the same keys should never be put in separate chunks.
+  """
   
   sorted_df = records.sort_values(keys).to_dict('records')
   chunks = list(map(list, np.array_split(sorted_df, num_split)))

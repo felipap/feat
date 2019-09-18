@@ -38,7 +38,7 @@ class Frame(object):
   def get_pivots(self):
     return self.pivots
 
-  def get_time_col(self):
+  def get_date_col(self):
     if '__date__' in self.df.columns:
       return '__date__'
     elif 'DATE(date)' in self.df.columns:

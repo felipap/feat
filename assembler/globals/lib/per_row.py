@@ -6,7 +6,7 @@ import multiprocessing
 import pandas as pd
 import numpy as np
 
-def make_peritem(innerfn, fillna=0):
+def make_per_row(innerfn, fillna=0):
   """Creates an assembler function from an Python function that takes a
   single Pandas row (plus any other arguments) as the input."""
 
@@ -32,7 +32,7 @@ def make_peritem(innerfn, fillna=0):
 
     final.rename(columns={ '_tcount_': 'CMONTH(date)', '_result_': name }, inplace=True)
 
-    result = ctx.create_subframe(name, child.pivots)
+    result = ctx.table.create_subframe(name, child.pivots)
     result.fill_data(final, fillnan=fillna)
     return result
   return magic

@@ -41,7 +41,7 @@ def DICT_GET(ctx, name, args):
   if collapsable:
     df = uncollapse_date(name, df, child, 'CMONTH(date)')
 
-  result = ctx.create_subframe(name, child.pivots)
+  result = ctx.table.create_subframe(name, child.pivots)
   result.fill_data(df, fillnan=0)
   return result
 
@@ -86,6 +86,11 @@ def JSON_GET(ctx, name, args):
   if collapsable:
     df = uncollapse_date(name, df, child, 'CMONTH(date)')
 
-  result = ctx.create_subframe(name, child.pivots)
+  result = ctx.table.create_subframe(name, child.pivots)
   result.fill_data(df, fillnan=0)
   return result
+
+functions = {
+  'JSON_GET': dict(call=JSON_GET, num_args=2, takes_pivot=False),
+  'DICT_GET': dict(call=DICT_GET, num_args=2, takes_pivot=False),
+}

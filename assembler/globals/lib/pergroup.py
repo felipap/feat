@@ -9,9 +9,13 @@ import numpy as np
 from .groupby_combine import split_respecting_boundaries, process_df_chunk
 
 def make_pergroup(innerfn, fillna=0):
+  """
+  Wraps around a function that takes as argument a *group*, that is, a set of
+  rows with the same key(s).
+  """
   
   @wraps(innerfn)
-  def magic(ctx, name, args, pivots=None):
+  def magic(ctx, name, args):
     child = args[0]
 
     df = child.get_stripped()
@@ -19,7 +23,7 @@ def make_pergroup(innerfn, fillna=0):
 
     df.rename(columns={ child.name: '_value_' }, inplace=True)
 
-    keyminustime = list(set(child.pivots)-{'CMONTH(date)'})
+    keyminustime = list(set(child.pivots)-{child.get_date_col()})
     # print(keyminustime)
 
     date_counts = sorted(ctx.get_date_range())
@@ -43,9 +47,14 @@ def make_pergroup(innerfn, fillna=0):
     final = pd.DataFrame(list(np.hstack(results)))
     # print(final)
     print("elapsed: %ds" % (timer() - start))
-    final.rename(columns={ '_tcount_': 'CMONTH(date)', '_result_': name }, inplace=True)
+    final.rename(columns={ '_tcount_': child.get_date_col(), '_result_': name }, inplace=True)
 
-    result = ctx.create_subframe(name, child.pivots)
+    result = ctx.table.create_subframe(name, child.pivots)
     result.fill_data(final, fillnan=fillna)
     return result
-  return magic
+  
+  return {
+    'call': magic,
+    'takes_pivot': False,
+    'num_args': 1,
+  }

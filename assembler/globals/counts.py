@@ -4,10 +4,11 @@ Functions related to number of occurences across time.
 
 import numpy as np
 import pandas as pd
+from ..lib.cmonth import date_to_cmonth, cmonth_to_date
 
 from .lib.pergroup import make_pergroup
 
-def accumulate_foreach(keys, rows):
+def accumulate_foreach(_, rows):
   '''Accumulate _value_ across dates.'''
 
   result = {}
@@ -19,9 +20,7 @@ def accumulate_foreach(keys, rows):
     result[date] = count
   return result
 
-accumulate = make_pergroup(accumulate_foreach)
-
-def csince_foreach(key, rows):
+def csince_foreach(_, rows):
   '''Count times since seen _value_ set.'''
   
   result = {}
@@ -35,4 +34,29 @@ def csince_foreach(key, rows):
     result[date] = count
   return result
 
-csince = make_pergroup(csince_foreach, fillna=-99999)
+def timesince(_, rows):
+  '''Accumulate _value_ across dates.'''
+
+  # if type(rows[0]['_value_']) == int:
+  #   raise Exception('Not expected value integer')
+
+  # TODO assert continuity of key (ie. CMONTH(date)) values, otherwise this will break.
+
+  count = None
+  result = {}
+  for date in sorted(rows.keys()):
+    if not count is None:
+      count += 1
+      result[date] = count
+    elif not rows[date] or date < date_to_cmonth(rows[date]['_value_']):
+      result[date] = -9999
+    else:
+      count = 0
+      result[date] = 0
+  return result
+
+functions = {
+  'ACCUMULATE': make_pergroup(accumulate_foreach),
+  'TIME_SINCE': make_pergroup(timesince),
+  'CSINCE': make_pergroup(csince_foreach, fillna=-99999),
+}

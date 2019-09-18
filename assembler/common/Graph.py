@@ -30,6 +30,11 @@ class Graph(object):
     self.pivots[name] = pivots
 
   def wrap(self):
+    """
+    To be called once all the tables have been added, so that pointers
+    between them can be created and checked for dangling values.
+    """
+    
     if self._wrapped:
       raise Exception()
     self._wrapped = True
@@ -38,9 +43,12 @@ class Graph(object):
     self._check_dangling_pointers()
 
   def _check_dangling_pointers(self):
+    """
+    TODO
+    Expensive operation.
+    """
+    
     print("CHECK DANGLING POINTERS")
-    # TODO check dangling pointers!!!!!!!! they will (sometimes silently) fuck up the features!!!!!!!!
-    return
 
   def add_table(self, table):
     if not table.name.islower():
@@ -54,7 +62,7 @@ class Graph(object):
   def _build_edges(self):    
     # Must register all nodes first, and only then register the edges.
 
-    for name, table in self.tables.items():
+    for table in self.tables.values():
       pointers = table.get_pointers()
       if not pointers:
         continue
@@ -93,8 +101,10 @@ class Graph(object):
     self.edges.append([tableOut, colOut, tableIn, colIn])
 
   def find_edge(self, tableOut=None, colOut=None, tableIn=None, colIn=None):
-    tableOut = tableOut.lower()
-    tableIn = tableIn.lower()
+    if tableOut:
+      tableOut = tableOut.lower()
+    if tableIn:
+      tableIn = tableIn.lower()
     
     if tableOut:
       assert tableOut in self.nodes, "%s not a registered node" % tableOut

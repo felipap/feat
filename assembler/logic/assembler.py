@@ -72,15 +72,17 @@ def assemble_function(context, tree):
 
 
 def fetch_existing_subframe(ctx, tree):
-  # When the column for the current tree node has already been generated
-  # (ie. tree['name'] is in dataframe.columns), we can use the column already
-  # in the dataframe to create a Frame, but we need to use the appropriate
-  # pivots. Eg. if "SUM(..|CMONTH(date),shop)" is already in the dataframe, we
-  # need to create a Frame() using ['CMONTH(date)', 'shop'] as pivots.
+  """
+  When the column for the current tree node has already been generated
+  (ie. tree['name'] is in dataframe.columns), we can use the column already
+  in the dataframe to create a Frame, but we need to use the appropriate
+  pivots. Eg. if "SUM(..|CMONTH(date),shop)" is already in the dataframe, we
+  need to create a Frame() using ['CMONTH(date)', 'shop'] as pivots.
+  """
 
   # Original columns of the dataframe have the table pivots as their pivot.
   if tree['name'] in ctx.table.get_original_columns():
-    result = ctx.create_subframe(tree['name'], ctx.table.get_keys())
+    result = ctx.table.create_subframe(tree['name'])
     result.fill_data(ctx.df)
     return result
 
@@ -88,7 +90,7 @@ def fetch_existing_subframe(ctx, tree):
   # information about frames we have already seen.
   # REVIEW good idea?
   cached = ctx.get_cached_frame(tree['name'])
-  result = ctx.create_subframe(tree['name'], cached.pivots)
+  result = ctx.table.create_subframe(tree['name'], cached.pivots)
   result.fill_data(ctx.df, cached.fillnan)
   return result
 
@@ -107,7 +109,7 @@ def assemble_column(ctx, tree):
       raise Exception('Does this ever happen?')
       # assert tree['this'] in ctx.df.columns, "Terminal node isn't a " \
       # "function, so expected a string that belongs to the dataframe."
-      # result = ctx.create_subframe(tree['this'])
+      # result = ctx.table.create_subframe(tree['this'])
       # result.fill_data(ctx.df)
       # return result
     result = assemble_function(ctx, tree)
@@ -189,7 +191,7 @@ def assemble_column(ctx, tree):
 
   # print("end result is", ctx.df.columns, child, "\n\n")
 
-  # result = ctx.create_subframe(tree['name'], ctx.get_pivots_for_table(ctx.current))
-  result = ctx.create_subframe(tree['name'], copied.pivots)
+  # result = ctx.table.create_subframe(tree['name'], ctx.get_pivots_for_table(ctx.current))
+  result = ctx.table.create_subframe(tree['name'], copied.pivots)
   result.fill_data(ctx.df)
   return result

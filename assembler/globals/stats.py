@@ -25,6 +25,6 @@ def strend_foreach(key, rows):
   #   result[date] = now - mean
   # return result
 
-strend = make_pergroup(strend_foreach, fillna=-99999)
-
-
+functions = {
+  'STREND': make_pergroup(strend_foreach, fillna=-99999),
+}

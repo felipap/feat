@@ -1,7 +1,7 @@
 
 import colorful
-import pandas as pd
 from timeit import default_timer as timer
+import pandas as pd
 
 from ..common.Context import Context
 from .assembler import assemble_column

@@ -11,46 +11,17 @@ from .lib.pergroup import make_pergroup
 import numpy as np
 import pandas as pd
 
-fns = {}
+functions = {}
 def register_function(keyword, call, **kwargs):
-  if keyword in fns:
+  if keyword in functions:
     raise Exception()
-  fns[keyword] = dict(
+  functions[keyword] = dict(
     name=keyword,
     keyword=keyword,
     call=call,
     takes_pivots=kwargs.get('takes_pivots', False),
     num_args=kwargs.get('num_args', 1),
   )
-
-from .counts import accumulate, csince
-register_function('ACCUMULATE', accumulate, num_args=1)
-register_function('CSINCE', csince, num_args=1)
-
-from .compare import greaterthan, changed
-register_function('GREATERTHAN', greaterthan, num_args=2)
-register_function('CP_CHANGED', changed)
-
-from .stats import strend
-register_function('STREND', strend, num_args=1)
-
-from .verb import JSON_GET, DICT_GET
-register_function('JSON_GET', JSON_GET, num_args=2)
-register_function('DICT_GET', DICT_GET, num_args=2)
-
-from .formatters import EMAIL_DOMAIN, DOMAIN_EXT
-register_function('EMAIL_DOMAIN', EMAIL_DOMAIN, num_args=1)
-register_function('DOMAIN_EXT', DOMAIN_EXT, num_args=1)
-
-from .datetime import dayofthemonth, dayoftheweek, monthoftheyear
-register_function('DT_DAY_OF_THE_MONTH', dayofthemonth, num_args=1)
-register_function('DT_DAY_OF_THE_WEEK', dayoftheweek, num_args=1)
-register_function('DT_MONTH_OF_THE_YEAR', monthoftheyear, num_args=1)
-
-def getFunction(name):
-  return fns.get(name)
-
-#
 
 def call_shift(ctx, name, args, pivots):
   lag = args[1]
@@ -59,7 +30,7 @@ def call_shift(ctx, name, args, pivots):
   shifted = child.get_stripped()
   shifted.rename(columns={ child.name: name }, inplace=True)
 
-  shifted[child.get_time_col()] += lag
+  shifted[child.get_date_col()] += lag
 
   # shifted[time_col] = shifted[time_col].astype(np.int64)
 
@@ -67,7 +38,7 @@ def call_shift(ctx, name, args, pivots):
   if pivots is None:
     pivots = child.pivots
   
-  result = ctx.create_subframe(name, pivots)
+  result = ctx.table.create_subframe(name, pivots)
   result.fill_data(shifted, child.fillnan)
   return result
 
@@ -90,7 +61,7 @@ register_function('GET', call_get, num_args=1, takes_pivots=True)
 
 def call_minusprev(ctx, name, args, pivots):
   child = args[0]
-  time_col = child.get_time_col()
+  time_col = child.get_date_col()
   
   if pivots:
     raise NotImplementedError()
@@ -129,7 +100,7 @@ def call_minusprev(ctx, name, args, pivots):
 
   pivots = child_pivots
 
-  result = ctx.create_subframe(name, pivots)
+  result = ctx.table.create_subframe(name, pivots)
   result.fill_data(df, 0)
   return result
 
@@ -139,7 +110,7 @@ register_function('MINUSPREV', call_minusprev, num_args=1, takes_pivots=True)
 
 def call_mean(ctx, name, args, pivots):
   child = args[0]
-  result = ctx.create_subframe(name, pivots)
+  result = ctx.table.create_subframe(name, pivots)
   agg = ctx.df.groupby(pivots).agg({ child.name: ['mean'] })
   agg.columns = [name]
   agg[name] = agg[name].astype(np.float64)
@@ -170,36 +141,12 @@ def call_cmonth(ctx, name, args):
     return date_to_cmonth(datetime.strptime(row[child.name], '%Y-%m-%dT%H:%M:%S.%fZ'))
   df[name] = df.apply(apply, axis=1)
 
-  result = ctx.create_subframe(name, pivots)
+  result = ctx.table.create_subframe(name, pivots)
   result.fill_data(df)
   return result
 
 register_function('CMONTH', call_cmonth, num_args=1)
-
-def call_date(ctx, name, args):
-  child = args[0]
-
-  # print('date is', child.get_stripped().columns, name, child.name)
-
-  df = child.get_stripped()
-
-  pivots = child.get_pivots()
-  if name in pivots:
-    assert can_collapse_date(child, name)
-    df = df.drop(name, axis=1).drop_duplicates()
-    pivots.remove(name)
-
-  def apply(row):
-    # if pd.isna(row[child.name]):
-    #   return np.nan
-    return date_to_cmonth(datetime.strptime(row[child.name], '%Y-%m-%dT%H:%M:%S.%fZ'))
-  df[name] = df.apply(apply, axis=1)
-
-  result = ctx.create_subframe(name, pivots)
-  result.fill_data(df)
-  return result
-
-register_function('DATE', call_date, num_args=1)
+register_function('DATE', call_cmonth, num_args=1)
 
 #
 
@@ -218,7 +165,7 @@ def call_cdsince(ctx, name, args):
   df = child.get_stripped()
   df[name] = df.apply(apply, axis=1)
 
-  result = ctx.create_subframe(name, child.get_pivots())
+  result = ctx.table.create_subframe(name, child.get_pivots())
   result.fill_data(df)
   return result
 
@@ -239,7 +186,7 @@ def call_cmsince(ctx, name, args):
   df = child.get_stripped()
   df[name] = df.apply(apply, axis=1)
 
-  result = ctx.create_subframe(name, child.get_pivots())
+  result = ctx.table.create_subframe(name, child.get_pivots())
   result.fill_data(df)
   return result
 
@@ -256,7 +203,7 @@ def call_exists(ctx, name, args, pivots):
   agg.reset_index(inplace=True)
   agg.loc[agg[name]>0,name] = 1
   agg[name] = agg[name].astype(np.int64) # REVIEW type cast
-  result = ctx.create_subframe(name, pivots)
+  result = ctx.table.create_subframe(name, pivots)
   result.fill_data(agg)
   return result
 
@@ -271,7 +218,7 @@ def call_latest(ctx, name, args, pivots):
   agg = ctx.df.groupby(pivots).agg({ child.name: (lambda x: x.iloc[0]) })
   agg.columns = [name]
   agg.reset_index(inplace=True)
-  result = ctx.create_subframe(name, pivots)
+  result = ctx.table.create_subframe(name, pivots)
   result.fill_data(agg, fillnan=0)
   return result
 
@@ -285,7 +232,7 @@ def call_sum(ctx, name, args, pivots):
   agg.columns = [name]
   agg.reset_index(inplace=True)
   agg[name] = agg[name].astype(np.float64) # REVIEW type cast
-  result = ctx.create_subframe(name, pivots)
+  result = ctx.table.create_subframe(name, pivots)
   result.fill_data(agg, fillnan=0)
   return result
 
@@ -301,7 +248,7 @@ def call_count(ctx, name, args, pivots):
   agg.columns = [name]
   agg.reset_index(inplace=True)
   agg[name] = agg[name].astype(np.int64) # REVIEW type cast
-  result = ctx.create_subframe(name, pivots)
+  result = ctx.table.create_subframe(name, pivots)
   result.fill_data(agg, fillnan=0)
   return result
 
@@ -317,7 +264,7 @@ def call_accumulate(ctx, name, args):
   count for November must still show up (with the same value as October).
   """
   child = args[0]
-  time_col = child.get_time_col() # 'CMONTH(date)' # args[2].name
+  time_col = child.get_date_col() # 'CMONTH(date)' # args[2].name
   pivots = list(child.pivots)
 
   original = child.get_stripped()
@@ -344,72 +291,11 @@ def call_accumulate(ctx, name, args):
 
   acc.drop('__original__', axis=1, inplace=True)
 
-  result = ctx.create_subframe(name, pivots)
+  result = ctx.table.create_subframe(name, pivots)
   result.fill_data(acc, fillnan=0)
   return result
 
 register_function('ACC', call_accumulate, num_args=1, takes_pivots=False)
-
-#
-
-
-def timesince(keys, rows):
-  '''Accumulate _value_ across dates.'''
-
-  # if type(rows[0]['_value_']) == int:
-  #   raise Exception('Not expected value integer')
-
-  # TODO assert continuity of key (ie. CMONTH(date)) values, otherwise this will break.
-
-  count = None
-  result = {}
-  for date in sorted(rows.keys()):
-    if not count is None:
-      count += 1
-      result[date] = count
-    elif not rows[date] or date < date_to_cmonth(rows[date]['_value_']):
-      result[date] = -9999
-    else:
-      count = 0
-      result[date] = 0
-  return result
-
-call_timesince = make_pergroup(timesince)
-
-"""
-def call_timesince(ctx, name, args, pivots):
-  child = args[0]
-  time_col = 'CMONTH(date)' # args[1].name
-
-  import builtins
-  builtins.child = child
-
-  colUniqueVals = {}
-  for pivot in child.pivots:
-    colUniqueVals[pivot] = ctx.df[pivot].unique()
-
-  colUniqueVals[time_col] = ctx.get_date_range()
-  df = gen_cartesian(colUniqueVals)
-
-  df.set_index(list(child.pivots), inplace=True)
-  c = child.df.set_index(list(child.pivots))
-
-  df[child.name] = c[child.name]
-  df[name] = df[time_col] - df[child.name]
-
-  # Fill rows for which event hasn't happened yet with very negative number.
-  df.loc[df[name]<0,name] = -99999
-
-  builtins.df = df
-  builtins.c = c
-  df.reset_index(inplace=True)
-
-  result = ctx.create_subframe(name, {time_col,*child.pivots})
-  result.fill_data(df)
-  return result
-"""
-
-register_function('TIME_SINCE', call_timesince, num_args=1, takes_pivots=True)
 
 #
 
@@ -446,7 +332,7 @@ def call_tsinceseen(ctx, name, args, pivots):
     df.update(other)
 
   df[name] = df[time_col] - df[name]
-  result = ctx.create_subframe(name, pivots)
+  result = ctx.table.create_subframe(name, pivots)
   # Fill NaN values with big positive number.
   result.fill_data(df, fillnan=-99999)
   return result

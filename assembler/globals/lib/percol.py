@@ -6,7 +6,7 @@ import multiprocessing
 import pandas as pd
 import numpy as np
 
-def make_percol(innerfn, fillna=0, dtype=None):
+def make_percol(innerfn, fillna=0, dtype=None, num_args=1):
   """Creates an assembler function from an Python function that takes a
   single Pandas column (plus any other arguments) as the input."""
   
@@ -20,15 +20,19 @@ def make_percol(innerfn, fillna=0, dtype=None):
     print("THIS MIGHT BREAK SOMETHING")
     df = df[pd.notnull(df['_value_'])]
     
-    df['_result_'] = innerfn(df['_value_'], args)
     df[name] = innerfn(df['_value_'], args)
 
     if dtype:
       print("using dtype %s" % repr(dtype))
       df[name] = df[name].astype(dtype)
 
-    result = ctx.create_subframe(name, child.pivots)
+    result = ctx.table.create_subframe(name, child.pivots)
     print("FIXME trying to fillna = ", fillna)
     result.fill_data(df, fillnan=fillna, dtype=dtype)
     return result
-  return magic
+
+  return {
+    'call': magic,
+    'num_args': num_args,
+    'takes_pivot': False,
+  }

@@ -72,7 +72,8 @@ def assemble(features, config, table_configs, dataframes):
   # Alert of NaN values being returned.
   for column in assembled.columns:
     if assembled[column].isna().any():
-      print("Column %s has NaN items " % column, assembled[column].unique())
+      # print("Column %s has NaN items " % column, assembled[column].unique())
+      pass
     
     # FIXME document this. Well wtf is this
     if assembled[column].dtype == np.dtype('O'):
@@ -80,7 +81,7 @@ def assemble(features, config, table_configs, dataframes):
 
   # Translate cmonth values to datetimes.
   mapping = { c: date_yearmonth(cmonth_to_date(c)) for c in range(570, 650) }
-  print("map is", mapping)
+  # print("map is", mapping)
   assembled['CMONTH(date)'] = assembled['__date__'].replace(mapping)
 
   return assembled

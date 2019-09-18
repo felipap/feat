@@ -1,5 +1,7 @@
 
 from ..lib.cmonth import date_to_cmonth, yearmonth_date
+import pandas as pd
+from .Frame import Frame
 
 def create_table_from_config(name, config, df):
   # if not set(config.keys()).issubset(['keys', 'key', 'types', 'pointers'])
@@ -73,3 +75,91 @@ class Table(object):
 
   def set_dataframe(self, value):
     self._dataframe = value
+
+  def create_subframe(self, colName, keys=None):
+    """Creates a frame derived from the self.current table."""
+
+    if keys is None:
+      keys = self.get_keys()
+
+    return Frame(colName, self, keys)
+
+  def merge_frame(self, frame, on=None, right_on=None, left_on=None):
+    if on:
+      if not set(frame.pivots).issubset(self._dataframe.columns):
+        raise Exception('Result can\'t be merged into current dataset: ', \
+        frame.pivots, self._dataframe.columns)
+      outer_pivots = on
+
+      frame_df = frame.get_stripped()
+
+      how = 'left'
+      # if 'FWD(MEAN_DIFF(Order_items{CMONTH(date)=CMONTH(order.date)}.SUM(quantity|CMONTH(order.date),product),CMONTH(date)),1,CMONTH(date))' in frame_df.columns:
+      #   print(frame_df.info())
+      #   print(self._dataframe.info())
+      #   sys.exit(0)
+        # how = 'inner'
+
+      # for pivot in on:
+      #
+      # if 'CMONTH(date)' in frame_df.columns:
+      #   print("types", frame_df['CMONTH(date)'].dtype, self._dataframe['CMONTH(date)'].dtype)
+      #   frame_df['CMONTH(date)'] = frame_df['CMONTH(date)'].astype('int64')
+
+      # display(frame_df)
+      # display(self._dataframe)
+
+      # print("not is gonna get stuck", on, frame_df.dtypes, self._dataframe.dtypes)
+      self._dataframe = pd.merge(self._dataframe, \
+        frame_df, \
+        on=on, \
+        how=how, \
+        suffixes=(False, False))
+    else:
+      # Merge frame into self._dataframe where self._dataframe[left_on] == frame[right_on].
+
+      copied_frame = frame.copy()
+      copied_frame.rename_pivot(right_on, '__JOIN__')
+      copied_frame_df = copied_frame.get_stripped()
+
+      columns_overlap = set(copied_frame_df.columns).intersection(self._dataframe.columns)
+
+      # if frame has columns ['id', 'CMONTH(date)'] and self._dataframe has
+      # columns ['customer', '__date__'], then we should throw an error! instead
+      # of just merging on self._dataframe.customer=frame.id.
+      for pivot in frame.pivots:
+        if pivot != right_on and not pivot in columns_overlap:
+          raise Exception(f'Pivot {pivot} of {frame.name} not considered in merger')
+      
+      right_on = '__JOIN__'
+
+      outer_pivots = [left_on]
+      if columns_overlap:
+        assert len(columns_overlap) == 1 # Just for debugging now, this should be dealt with!!!
+        overlap = columns_overlap.pop()
+        outer_pivots += [overlap]
+        right_on = [right_on, overlap]
+        left_on = [left_on, overlap]
+    
+      
+      self._dataframe = pd.merge(self._dataframe, \
+        copied_frame_df, \
+        left_on=left_on, \
+        right_on=right_on, \
+        how='left', \
+        suffixes=(False, False))
+      self._dataframe.drop('__JOIN__', axis=1, inplace=True)
+
+    if not frame.fillnan is None:
+      self._dataframe.fillna(value={ frame.name: frame.fillnan }, inplace=True)
+    if not frame.dtype is None:
+      print("CASTING!", frame.dtype, frame.name)
+      self._dataframe[frame.name] = self._dataframe[frame.name].astype(frame.dtype)
+
+    # self.cached_frames[frame.name] = self.graph.pivots[self.current]
+    # copied = frame.copy()
+    # copied.pivots = outer_pivots
+    # self.cached_frames[frame.name] = copied
+
+    return outer_pivots
+

@@ -4,23 +4,21 @@ Functions related to comparing.
 
 import numpy as np
 import pandas as pd
-from numba import njit
+# from numba import njit
 
-from .lib.percol import make_percol
+from .lib.per_value import per_value
 from .lib.pergroup import make_pergroup
 
 # https://stackoverflow.com/a/52674448/396050
 # @njit
-def call_greaterthan(column, args):
-  return column > args[1]
+def call_greaterthan(value, args):
+  return value > args[1]
 
-greaterthan = make_percol(call_greaterthan, fillna=0, dtype=np.bool)
-
-def call_changed(keys, rows):
+def call_changed(_, rows):
   '''True when a value changes from yesterday to today.'''
 
   result = {}
-  last = 23456123489123 # A random thing.
+  last = 'ROFL ANDREWWWW' # A random thing.
   for date in sorted(rows.keys()):
     if rows[date] and rows[date]['_value_']:
       this = rows[date]['_value_'] 
@@ -30,4 +28,7 @@ def call_changed(keys, rows):
       result[date] = False
   return result
 
-changed = make_pergroup(call_changed, fillna=0)
+functions = {
+  'GREATERTHAN': per_value(call_greaterthan, fillna=False, dtype=np.bool, num_args=2),
+  'CP_CHANGED': make_pergroup(call_changed, fillna=0),
+}
