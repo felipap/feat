@@ -15,15 +15,16 @@ def make_pergroup(innerfn, fillna=0):
   """
   
   @wraps(innerfn)
-  def magic(ctx, name, args):
+  def magic(ctx, name, args, pivots=None):
     child = args[0]
 
     df = child.get_stripped()
+    pivots = pivots or child.pivots
     # df = df[df['customer']=='5b69c4250998ba2b42de9de2']
 
     df.rename(columns={ child.name: '_value_' }, inplace=True)
 
-    keyminustime = list(set(child.pivots)-{child.get_date_col()})
+    keyminustime = list(set(pivots)-{child.get_date_col()})
     # print(keyminustime)
 
     date_counts = sorted(ctx.get_date_range())
@@ -49,12 +50,12 @@ def make_pergroup(innerfn, fillna=0):
     print("elapsed: %ds" % (timer() - start))
     final.rename(columns={ '_tcount_': child.get_date_col(), '_result_': name }, inplace=True)
 
-    result = ctx.table.create_subframe(name, child.pivots)
+    result = ctx.table.create_subframe(name, pivots)
     result.fill_data(final, fillnan=fillna)
     return result
   
   return {
     'call': magic,
-    'takes_pivot': False,
+    'takes_pivots': True,
     'num_args': 1,
   }

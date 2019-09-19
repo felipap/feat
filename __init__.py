@@ -1,3 +1,3 @@
 
-from .assembler import assemble
+from .feat import assemble
 from . import *

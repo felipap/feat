@@ -91,6 +91,6 @@ def JSON_GET(ctx, name, args):
   return result
 
 functions = {
-  'JSON_GET': dict(call=JSON_GET, num_args=2, takes_pivot=False),
-  'DICT_GET': dict(call=DICT_GET, num_args=2, takes_pivot=False),
+  'JSON_GET': dict(call=JSON_GET, num_args=2),
+  'DICT_GET': dict(call=DICT_GET, num_args=2),
 }

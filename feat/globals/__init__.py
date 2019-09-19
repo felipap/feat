@@ -22,6 +22,7 @@ def assert_valid_function(fn):
     assert isinstance(fn, dict)
     assert 'call' in fn
     assert 'num_args' in fn
+    assert set(fn.keys()).issubset(['call', 'num_args', 'takes_pivots', 'keyword', 'name'])
   except AssertionError as err:
     print(f'Invalid function {fn}', err)
     raise err

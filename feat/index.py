@@ -10,7 +10,7 @@ from .common.Graph import Graph
 from .common.Table import create_table_from_config
 from .common.Output import Output
 from .lib.gen_cartesian import gen_cartesian
-from .logic import assemble_features
+from .assembler import assemble_features
 from .parser import parseLineToCommand, Tree
 from .lib.state import save_state
 from .lib.cmonth import date_to_cmonth, cmonth_to_date, date_yearmonth, yearmonth_date

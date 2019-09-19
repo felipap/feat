@@ -34,5 +34,5 @@ def make_percol(innerfn, fillna=0, dtype=None, num_args=1):
   return {
     'call': magic,
     'num_args': num_args,
-    'takes_pivot': False,
+    'takes_pivots': False,
   }
