@@ -171,3 +171,8 @@ class Table(object):
 
     return outer_pivots
 
+  def assert_unique_keys(self):
+    dropped = self._dataframe.drop_duplicates(self.get_keys())
+    if dropped.shape[0] != self._dataframe.shape[0]:
+      raise Exception('table has duplicates')
+

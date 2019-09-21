@@ -6,7 +6,7 @@ import time
 from ..lib.gen_cartesian import gen_cartesian
 from .lib.lib import can_collapse_date
 from ..lib.tblock import date_to_cmonth, cmonth_to_date
-from .lib.pergroup import make_pergroup
+from .lib.per_group import make_per_group
 
 import numpy as np
 import pandas as pd

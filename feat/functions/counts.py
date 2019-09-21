@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from ..lib.tblock import date_to_cmonth, cmonth_to_date
 
-from .lib.pergroup import make_pergroup
+from .lib.per_group import make_per_group
 
 def accumulate_foreach(_, rows):
   """
@@ -90,8 +90,8 @@ def timesinceseen(_, rows):
   return result
 
 functions = {
-  'ACCUMULATE': make_pergroup(accumulate_foreach),
-  'TIME_SINCE': make_pergroup(timesince),
-  'TIME_SINCE_SEEN': make_pergroup(timesinceseen, fillna=-999),
-  'CSINCE': make_pergroup(csince_foreach, fillna=-99999),
+  'ACCUMULATE': make_per_group(accumulate_foreach),
+  'TIME_SINCE': make_per_group(timesince),
+  'TIME_SINCE_SEEN': make_per_group(timesinceseen, fillna=-999),
+  'CSINCE': make_per_group(csince_foreach, fillna=-999),
 }

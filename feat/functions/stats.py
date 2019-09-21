@@ -5,7 +5,7 @@ Functions related to statistics.
 import numpy as np
 import pandas as pd
 
-from .lib.pergroup import make_pergroup
+from .lib.per_group import make_per_group
 
 def strend_foreach(key, rows):
   result = {}
@@ -26,5 +26,5 @@ def strend_foreach(key, rows):
   # return result
 
 functions = {
-  'STREND': make_pergroup(strend_foreach, fillna=-99999),
+  'STREND': make_per_group(strend_foreach, fillna=-99999),
 }

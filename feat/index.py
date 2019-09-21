@@ -22,9 +22,13 @@ def parse_features(features: List[str]):
   
   if len(set(features)) < len(features):
     print("Duplicate features found:", len(set(features)), len(features))
+    found = set()
     for feature in features:
+      if feature in found:
+        continue
       if features.count(feature) > 1:
         print("–", feature)
+        found.add(feature)
     raise Exception()
   
   commands = []

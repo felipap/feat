@@ -7,7 +7,7 @@ import pandas as pd
 # from numba import njit
 
 from .lib.per_value import per_value
-from .lib.pergroup import make_pergroup
+from .lib.per_group import make_per_group
 
 # https://stackoverflow.com/a/52674448/396050
 # @njit
@@ -30,5 +30,5 @@ def call_changed(_, rows):
 
 functions = {
   'GREATERTHAN': per_value(call_greaterthan, fillna=False, dtype=np.bool, num_args=2),
-  'CP_CHANGED': make_pergroup(call_changed, fillna=0),
+  'CP_CHANGED': make_per_group(call_changed, fillna=0),
 }

@@ -6,7 +6,7 @@ import multiprocessing
 import pandas as pd
 import numpy as np
 
-def make_percol(innerfn, fillna=0, dtype=None, num_args=1):
+def make_per_col(innerfn, fillna=0, dtype=None, num_args=1):
   """Creates an assembler function from an Python function that takes a
   single Pandas column (plus any other arguments) as the input."""
   
