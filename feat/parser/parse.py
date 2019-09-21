@@ -3,8 +3,9 @@
 from os import path
 from functools import wraps
 import importlib
-
 from lark import Lark, Transformer, v_args, Token, Tree
+
+from .Command import Command
 
 # TODO: consider using https://docs.python.org/3.7/library/importlib.html#module-importlib.resources
 LOCAL_DIR = path.dirname(path.realpath(__file__))
@@ -140,15 +141,18 @@ class JSONifier(Transformer):
   number = v_args(inline=True)(float)
   string = v_args(inline=True)(str)
 
-def parseLineToCommand(string):
+def parse_feature(string):
   grammar = open(GRAMMAR_FILE_PATH).read()
 
   json_parser = Lark(
     grammar,
     start='root_column',
     propagate_positions=True,
-    debug=True)
+    debug=True,
+  )
 
-  tree = json_parser.parse(string)
-  # print("Tree is", tree, "\n", tree.data, dir(tree.data))
-  return JSONifier(string).transform(tree)
+  raw = json_parser.parse(string)
+  # print("raw is", raw, "\n", raw.data, dir(raw.data))
+  transformed = JSONifier(string).transform(raw)
+  
+  return Command(transformed)

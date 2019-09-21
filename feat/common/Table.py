@@ -1,29 +1,37 @@
 
-from ..lib.cmonth import date_to_cmonth, yearmonth_date
+from datetime import datetime
+from ..lib.tblock import date_to_cmonth, date_to_cweek, yearmonth_date
 import pandas as pd
 from .Frame import Frame
 
-def create_table_from_config(name, config, df):
-  # if not set(config.keys()).issubset(['keys', 'key', 'types', 'pointers'])
+def create_table_from_config(name, table_config, df, block_type):
+  # if not set(table_config.keys()).issubset(['keys', 'key', 'types', 'pointers'])
   # TODO do this validation inside InputConfit
 
   date_key = None
-  if config.get('date_key'):
+  if table_config.get('date_key'):
     # TODO find a better place to make this transformation
-    date_key = config.get('date_key')
+    date_key = table_config.get('date_key')
     uniques = df[date_key].unique()
-    mapping = { unique: date_to_cmonth(yearmonth_date(unique)) for unique in uniques }
+
+    if block_type == 'month':
+      mapping = { unique: date_to_cmonth(yearmonth_date(unique)) for unique in uniques }
+    elif block_type == 'week':
+      mapping = { unique: date_to_cweek(datetime.strptime(unique, '%Y-%m-%d')) for unique in uniques }
+    else:
+      raise Exception()
+
     df.replace(mapping, inplace=True)
   
   # Validate the table configuration.
-  keys = [config['key']]
+  keys = [table_config['key']]
   extended_keys = keys + (date_key and [date_key] or [])
 
   if df.duplicated(extended_keys).any():
     print(f'Dropping duplicates in df {name}.')
     df = df.drop_duplicates(keys)
 
-  return Table(name, df, keys, config.get('pointers', {}), date_key)
+  return Table(name, df, keys, table_config.get('pointers', {}), date_key)
 
 
 class Table(object):

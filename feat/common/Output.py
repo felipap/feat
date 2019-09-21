@@ -1,6 +1,6 @@
 
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import pandas as pd
 import numpy as np
@@ -8,21 +8,21 @@ import itertools
 from functools import reduce
 from .Table import Table
 
-from ..lib.cmonth import date_to_cmonth, cmonth_to_date, date_yearmonth, yearmonth_date
+from ..lib.tblock import date_to_cmonth, date_to_cweek
 
-def _get_month_count(start, end):
+def get_month_count(start, end):
   """Inclusive range."""
   curr = start
   while curr <= end:
     yield date_to_cmonth(curr)
     curr += relativedelta(months=1)
 
-def _gen_product(sets):
+def gen_product(sets):
   """Generate the cartesian product of a list of sets (with element sorted by
   the order that their sets were provided, of course)."""
 
   # TODO one of the Kaggle solutions is smarter than just doing a complete product
-  # for date in _get_month_count(start, end):
+  # for date in get_month_count(start, end):
   #   _sales = train[train.month_block==date]
   #   m2.append(np.array(list(product([date], _sales.shop.unique(), _sales.item.unique())), dtype='int16'))
 
@@ -43,6 +43,33 @@ def caseword(word):
   return word[0].upper()+word[1:]
 
 
+def make_date_counts(date_range, block_type):
+  """Inclusive range."""
+
+  start = datetime.strptime(date_range[0], '%Y-%m-%d')
+  end = datetime.strptime(date_range[1], '%Y-%m-%d')
+
+  if block_type == 'month':
+    months = []
+    curr = start
+    while curr <= end:
+      months.append(curr)
+      curr += relativedelta(months=1)
+    return list(map(date_to_cmonth, months))
+  else:
+    # Start with Sundays, to match the startOf('week') logic from moment.js.
+    if start.weekday() != 0:
+      # Start with the closest following Sunday
+      start = start + timedelta(7 - start.weekday())
+      # assert start.weekday() == 0, "This should be a Sunday!"
+
+    weeks = []
+    curr = start
+    while curr <= end:
+      weeks.append(curr)
+      curr += relativedelta(weeks=1)
+    return list(map(date_to_cweek, weeks))
+
 RE_POINTER = re.compile(r'^\w+\.\w+$')
 DATE_FIELD = '__date__'
 
@@ -51,7 +78,7 @@ class Output(Table):
 
   DATE_FIELD = DATE_FIELD
 
-  def __init__(self, tables, pointers, dates):
+  def __init__(self, tables, pointers, date_range, block_type):
     """
     One output row will be generated for each combination of the tables in
     pointers and the dates we want to generate values for.
@@ -64,6 +91,8 @@ class Output(Table):
       pointers: { 'customer': 'customer.id' }
       tables: dictionary of Table, indexed by their names.
     """
+    
+    date_counts = make_date_counts(date_range, block_type)
     
     # Record each unique value of the tables that the output points to (eg.
     # for each product id), so we can scaffold an output dataframe.
@@ -91,8 +120,7 @@ class Output(Table):
       print(f'Unique values for {table_name}.{field}: ({len(uniques)} items)')
 
 
-    # REVIEW
-    unique_values[DATE_FIELD] = list(map(date_to_cmonth, dates))
+    unique_values[DATE_FIELD] = date_counts
 
     # print("Using date range", dates, unique_values[DATE_FIELD], len(dates))
 
@@ -102,7 +130,7 @@ class Output(Table):
     # print("Generating output of size", output_size)
     assert output_size < 50*1000*1000, "Output is too big!"
 
-    product = _gen_product(unique_values.values())
+    product = gen_product(unique_values.values())
 
     dataframe = pd.DataFrame(product)
     dataframe.columns = list(unique_values.keys())

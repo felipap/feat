@@ -6,8 +6,10 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 from random import randrange
+from ..lib.tblock import date_to_cmonth, cmonth_to_date, date_to_cweek
 
 from .lib.percol import make_percol
+from .lib.per_value import per_value
 
 def call_dayoftheweek(column, _):
   def apply(value):
@@ -24,8 +26,17 @@ def call_monthoftheyear(column, _):
     return datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ').month
   return column.apply(apply)
 
+def call_date(ctx, value):
+  date = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+
+  if ctx['ctx'].block_type == 'month':
+    return date_to_cmonth(date)
+  else:
+    return date_to_cweek(date)
+
 functions = {
   'DT_DAY_OF_THE_WEEK': make_percol(call_dayoftheweek, fillna=-1, dtype=int),
   'DT_DAY_OF_THE_MONTH': make_percol(call_dayofthemonth, fillna=-1, dtype=int),
   'DT_MONTH_OF_THE_YEAR': make_percol(call_monthoftheyear, fillna=-1, dtype=int),
+  'DATE': per_value(call_date, fillna=-1, dtype=int, takes_ctx=True),
 }

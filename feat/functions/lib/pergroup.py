@@ -8,6 +8,8 @@ import numpy as np
 
 from .groupby_combine import split_respecting_boundaries, process_df_chunk
 
+SPLIT = 0
+
 def make_pergroup(innerfn, fillna=0):
   """
   Wraps around a function that takes as argument a *group*, that is, a set of
@@ -25,25 +27,36 @@ def make_pergroup(innerfn, fillna=0):
     df.rename(columns={ child.name: '_value_' }, inplace=True)
 
     keyminustime = list(set(pivots)-{child.get_date_col()})
-    # print(keyminustime)
-
     date_counts = sorted(ctx.get_date_range())
-    # print(date_counts)
 
-    df_chunks = split_respecting_boundaries(df, keyminustime, 4)
+    # Make sure that the date values found in this dataframe are a subset of
+    # the values from ctx.get_date_range().
+    if not set(df[child.get_date_col()].unique()).issubset(date_counts):
+      raise Exception()
+
+    if SPLIT > 1:
+      # Make innerfn application faster by splitting it into multiple chunks and
+      # running it in parallel. REVIEW is this really faster?
+      df_chunks = split_respecting_boundaries(df, keyminustime, 4)
+    else:
+      df_chunks = [df.to_dict('records')]
+
     chunks = [{
-      "df": dc,
-      "cols": keyminustime,
+      "records": df_chunk,
+      "columns": keyminustime,
       "date_counts": date_counts,
-      "fn": innerfn,
+      "function": innerfn,
       # TODO SUPPORT PIVOTS
       "time_col": "__date__", # "CMONTH(date)",
-    } for dc in df_chunks]
+    } for df_chunk in df_chunks]
 
     start = timer()
-    results = list(map(process_df_chunk, chunks))
-    # pool = multiprocessing.Pool()
-    # results = pool.map(process_df_chunk, chunks)
+
+    if SPLIT > 1:
+      pool = multiprocessing.Pool()
+      results = pool.map(process_df_chunk, chunks)
+    else:
+      results = list(map(process_df_chunk, chunks))
     
     final = pd.DataFrame(list(np.hstack(results)))
     # print(final)

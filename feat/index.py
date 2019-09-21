@@ -10,10 +10,10 @@ from .common.Graph import Graph
 from .common.Table import create_table_from_config
 from .common.Output import Output
 from .lib.gen_cartesian import gen_cartesian
-from .assembler import assemble_features
-from .parser import parseLineToCommand, Tree
+from .assembler import assemble_many
+from .parser import parse_feature
 from .lib.state import save_state
-from .lib.cmonth import date_to_cmonth, cmonth_to_date, date_yearmonth, yearmonth_date
+from .lib.tblock import date_to_cmonth, cmonth_to_date, date_yearmonth, yearmonth_date, date_to_cweek, cweek_to_date
 from .graph_config import GraphConfig
 
 
@@ -29,21 +29,22 @@ def parse_features(features: List[str]):
   
   commands = []
   for feature in features: # REVIEW no need to validate tree?
-    commands.append(Tree(parseLineToCommand(feature)))
+    commands.append(parse_feature(feature))
   return commands
 
 
-def generate_date_range(date_range):
-  """Inclusive range."""
-  start = datetime.strptime(date_range[0], '%Y-%m')
-  end = datetime.strptime(date_range[1], '%Y-%m')
+def validate_result(assembled):
+  # Alert of NaN values being returned.
+  for column in assembled.columns:
+    if assembled[column].isna().any():
+      print("Column %s has NaN items " % column, assembled[column].unique())
 
-  result = []
-  curr = start
-  while curr <= end:
-    result.append(curr)
-    curr += relativedelta(months=1)
-  return result
+    if assembled[column].isna().any():
+      print("Column %s has NaN items " % column, assembled[column].unique())
+
+    # FIXME document this. Well wtf is this
+    if assembled[column].dtype == np.dtype('O'):
+      assembled[column] = assembled[column].astype(str)
 
 
 def assemble(features, config, table_configs, dataframes):
@@ -58,29 +59,21 @@ def assemble(features, config, table_configs, dataframes):
     if not table_name in dataframes:
       raise Exception(f'Dataframe for table {table_name} was not supplied.')
 
-    table = create_table_from_config(table_name, table_config, dataframes.pop(table_name))
+    table = create_table_from_config(table_name, table_config, dataframes.pop(table_name), config['block_type'])
     graph.add_table(table)
 
-  date_range = generate_date_range(config['date_range'])
-  output = Output(graph.tables, config['pointers'], date_range)
+  output = Output(graph.tables, config['pointers'], config['date_range'], config['block_type'])
   graph.add_output(output)
   graph.wrap()
 
   command_trees = parse_features(features)
-  assembled = assemble_features(graph, output, command_trees, config['date_block'])
-  
-  # Alert of NaN values being returned.
-  for column in assembled.columns:
-    if assembled[column].isna().any():
-      # print("Column %s has NaN items " % column, assembled[column].unique())
-      pass
-    
-    # FIXME document this. Well wtf is this
-    if assembled[column].dtype == np.dtype('O'):
-      assembled[column] = assembled[column].astype(str)
+  assembled = assemble_many(graph, output, command_trees, config['block_type'])
 
+  validate_result(assembled)
   # Translate cmonth values to datetimes.
-  mapping = { c: date_yearmonth(cmonth_to_date(c)) for c in range(570, 650) }
+  # mapping = { c: date_yearmonth(cmonth_to_date(c)) for c in range(570, 650) }
+  mapping = { c: datetime.strftime(cweek_to_date(c), '%Y-%m-%d') for c in range(2489, 2585) }
+
   # print("map is", mapping)
   assembled['CMONTH(date)'] = assembled['__date__'].replace(mapping)
 

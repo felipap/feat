@@ -3,9 +3,10 @@ from .Frame import Frame
 import pandas as pd
 
 class Context(object):
-  def __init__(self, graph, output):
+  def __init__(self, graph, output, block_type):
     self.output = output
     self.graph = graph
+    self.block_type = block_type
     self.current = None
     self.swap_in('output')
     self.cached_frames = {}

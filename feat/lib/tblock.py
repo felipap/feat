@@ -8,6 +8,17 @@ def date_to_cmonth(date):
   assert isinstance(date, datetime)
   return (date.year-1970)*12+date.month
 
+def date_to_cweek(date):
+  # https://stackoverflow.com/questions/2600775
+  assert isinstance(date, datetime)
+  year, week = date.isocalendar()[:2]
+  return (year-1970)*52+week
+
+def cweek_to_date(cweek):
+  year = cweek // 52 + 1970
+  nweek = cweek % 52
+  return datetime(year, 1, 1) + relativedelta(weeks=nweek-1)
+
 def cmonth_to_date(cmonth):
   base_date = datetime(1970, 1, 1)
   date = base_date + relativedelta(months=cmonth-1)

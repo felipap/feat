@@ -10,8 +10,8 @@ import pandas as pd
 import sys
 sys.path.append('..')
 from ..common import Frame, assert_returns_frame
-from ..parser import Tree
-from ..globals import getFunction
+from ..functions import getFunction
+from ..parser.Command import Command
 
 def assemble_column_log_errors(inner):
   @wraps(inner)
@@ -19,7 +19,7 @@ def assemble_column_log_errors(inner):
     try:
       result = inner(ctx, tree)
     except Exception as e:
-      print("^ Error with", ctx.current, tree['name'])
+      print("^ Error with", ctx.current, tree.get_name())
       raise e
     assert result.__class__.__name__ == 'Frame', result.__class__.__name__
     # assert isinstance(result, Frame) # Won't work with jupyter autoreload.
@@ -29,7 +29,7 @@ def assemble_column_log_errors(inner):
 
 @assert_returns_frame
 def assemble_function(context, tree):
-  keyword = tree['function']
+  keyword = tree.get_function()
 
   fn = getFunction(keyword)
   if not fn:
@@ -37,16 +37,16 @@ def assemble_function(context, tree):
 
   def assemble_groupbys(context, tree):
     groupby = None
-    if tree.get('groupby'):
-      for g in tree['groupby']:
+    if tree.has_groupby():
+      for g in tree.get_groupby():
         assemble_column(context, g)
-      groupby = [f['name'] for f in tree['groupby']]
+      groupby = [f.get_name() for f in tree.get_groupby()]
     return groupby
 
   def assemble_args(context, tree):
     ll = []
-    for arg in tree.get('args'):
-      if isinstance(arg, dict): # REVIEW document this at least, very shaky
+    for arg in tree.get_args():
+      if isinstance(arg, Command):
         ll.append(assemble_column(context, arg))
         # print("r is", r, r.df.columns, context.df.columns)
       else:
@@ -63,34 +63,39 @@ def assemble_function(context, tree):
   else:
     assert groupby is None
 
+  # if tree.get_name() == 'ACCUMULATE(CSINCE(Order.COUNT(id|customer,DATE(date))))':
+  #   import ptvsd
+  #   ptvsd.enable_attach(address=('localhost', 5678), redirect_output=True)
+  #   ptvsd.wait_for_attach()
+
   if fn.get('takes_pivots', False):
-    result = fn['call'](context, tree['name'], args, groupby)
+    result = fn['call'](context, tree.get_name(), args, groupby)
   else:
-    result = fn['call'](context, tree['name'], args)
+    result = fn['call'](context, tree.get_name(), args)
 
   return result
 
 
-def fetch_existing_subframe(ctx, tree):
+def fetch_existing_subframe(ctx, name):
   """
   When the column for the current tree node has already been generated
-  (ie. tree['name'] is in dataframe.columns), we can use the column already
+  (ie. name is in dataframe.columns), we can use the column already
   in the dataframe to create a Frame, but we need to use the appropriate
   pivots. Eg. if "SUM(..|CMONTH(date),shop)" is already in the dataframe, we
   need to create a Frame() using ['CMONTH(date)', 'shop'] as pivots.
   """
 
   # Original columns of the dataframe have the table pivots as their pivot.
-  if tree['name'] in ctx.table.get_original_columns():
-    result = ctx.table.create_subframe(tree['name'])
+  if name in ctx.table.get_original_columns():
+    result = ctx.table.create_subframe(name)
     result.fill_data(ctx.df)
     return result
 
   # If the column is not original, ctx.get_pivots_for_frame gives cached
   # information about frames we have already seen.
   # REVIEW good idea?
-  cached = ctx.get_cached_frame(tree['name'])
-  result = ctx.table.create_subframe(tree['name'], cached.pivots)
+  cached = ctx.get_cached_frame(name)
+  result = ctx.table.create_subframe(name, cached.pivots)
   result.fill_data(ctx.df, cached.fillnan)
   return result
 
@@ -98,13 +103,11 @@ def fetch_existing_subframe(ctx, tree):
 @assert_returns_frame
 def assemble_column(ctx, tree):  
   # If column was already generated, stop.
-  if ctx.table.has_column(tree.get('name')):
-    return fetch_existing_subframe(ctx, tree)
+  if ctx.table.has_column(tree.get_name()):
+    return fetch_existing_subframe(ctx, tree.get_name())
 
-  is_function = 'function' in tree
-
-  if tree.get('is_terminal'):
-    if not is_function:
+  if tree.is_terminal():
+    if not tree.is_function():
       print("tree is", tree)
       raise Exception('Does this ever happen?')
       # assert tree['this'] in ctx.df.columns, "Terminal node isn't a " \
@@ -122,20 +125,20 @@ def assemble_column(ctx, tree):
   # and call assemble_column on the child. First, figure out the appropriate
   # dataframe for the current node.
 
-  assert 'next' in tree, "Non-terminal notes must have a child"
+  assert tree.has_next(), "Non-terminal notes must have a child"
 
-  if tree.get('root'):
-    prev_current = ctx.swap_in(tree['root'])
-    child = assemble_column(ctx, tree['next'])
+  if tree.get_root():
+    prev_current = ctx.swap_in(tree.get_root())
+    child = assemble_column(ctx, tree.get_next())
     ctx.swap_in(prev_current)
 
-    if tree.get('translation'):
-      mapping = tree['translation'].get('map_str')
+    if tree.get_translation():
+      mapping = tree.get_translation().get('map_str')
       mapping = dict(mapping)
     else:
       mapping = None
     child.translate_pivots_root(ctx, ctx.current, mapping)
-    child.rename(tree['name'])
+    child.rename(tree.get_name())
 
     # IMPORTANT:
     # merge_frame_with_df will return an expanded version of child, with
@@ -153,10 +156,10 @@ def assemble_column(ctx, tree):
   # Pure tables can't have dots in their column names, so being here means that
   # something of the kind `Sales.item.price` is happening, where `Sales.item`
   # is a relationship endpoint from the Sales to the Items table. In this case,
-  # tree['this'] == 'item', and tree['next'] points to the tree for 'price'.
+  # tree['this'] == 'item', and tree.get_next() points to the tree for 'price'.
 
   table_out = ctx.current
-  key_out = tree['this']
+  key_out = tree.get_this()
 
   # Find table and key to join into from context.
   rel = ctx.graph.find_edge(tableOut=table_out, colOut=key_out)
@@ -166,14 +169,14 @@ def assemble_column(ctx, tree):
 
   # Execute child with context of tableIn.
   ctx.swap_in(tableIn)
-  child = assemble_column(ctx, tree['next'])
+  child = assemble_column(ctx, tree.get_next())
   ctx.swap_in(table_out)
 
-  child.rename(tree['name'])
+  child.rename(tree.get_name())
 
   if ctx.table.has_column(child.name):
     # Not expected, as the condition of it already being in columns should've
-    # triggered the `tree['name'] in ctx.df.columns` check above.
+    # triggered the `tree.get_name() in ctx.df.columns` check above.
     raise Exception()
 
   copied = ctx.merge_frame_with_df(
@@ -191,7 +194,8 @@ def assemble_column(ctx, tree):
 
   # print("end result is", ctx.df.columns, child, "\n\n")
 
-  # result = ctx.table.create_subframe(tree['name'], ctx.get_pivots_for_table(ctx.current))
-  result = ctx.table.create_subframe(tree['name'], copied.pivots)
+  # result = ctx.table.create_subframe(tree.get_name(), ctx.get_pivots_for_table(ctx.current))
+  result = ctx.table.create_subframe(tree.get_name(), copied.pivots)
   result.fill_data(ctx.df)
   return result
+

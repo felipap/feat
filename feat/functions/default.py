@@ -5,7 +5,7 @@ import time
 
 from ..lib.gen_cartesian import gen_cartesian
 from .lib.lib import can_collapse_date
-from ..lib.cmonth import date_to_cmonth, cmonth_to_date
+from ..lib.tblock import date_to_cmonth, cmonth_to_date
 from .lib.pergroup import make_pergroup
 
 import numpy as np
@@ -146,30 +146,6 @@ def call_cmonth(ctx, name, args):
   return result
 
 register_function('CMONTH', call_cmonth, num_args=1)
-register_function('DATE', call_cmonth, num_args=1)
-
-#
-
-def call_cdsince(ctx, name, args):
-  child = args[0]
-
-  assert child.get_stripped()[child.name].dtype == np.dtype('datetime64[ns]')
-
-  def apply(row):
-    if pd.isnull(row[child.name]):
-      return -99999
-    return (datetime.now() - row[child.name]).days
-    # r = relativedelta.relativedelta(datetime.now(), row[child.name])
-    # return r.months  * (12 * r.years)
-
-  df = child.get_stripped()
-  df[name] = df.apply(apply, axis=1)
-
-  result = ctx.table.create_subframe(name, child.get_pivots())
-  result.fill_data(df)
-  return result
-
-register_function('CDAYSINCE', call_cdsince, num_args=1)
 
 #
 

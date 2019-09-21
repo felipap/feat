@@ -6,7 +6,7 @@ import numpy as np
 
 from .lib import fancy_apply, can_collapse_date, uncollapse_date, assert_constant_nrows
 
-def per_value(innerfn, fillna=0, dtype=None, num_args=1):
+def per_value(innerfn, fillna=0, dtype=None, num_args=1, takes_ctx=False):
   """
   Wraps around a function that takes a value.
   """
@@ -29,7 +29,10 @@ def per_value(innerfn, fillna=0, dtype=None, num_args=1):
     
     replace = {}
     for value in dataframe[name].unique():
-      replace[value] = innerfn(value, args)
+      if takes_ctx:
+        replace[value] = innerfn(dict(ctx=ctx, args=args), value)
+      else:
+        replace[value] = innerfn(value, args)
     
     start = timer()
     records = dataframe.to_records('dict')

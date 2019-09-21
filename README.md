@@ -1,20 +1,26 @@
 
 # Feat
 
-Given a list of feature descriptions and a corresponding set of relational
-tables, automatically assembles a data set with those features.
+Takes a set of connected tables and a list of feature descriptions and
+automatically assembles a dataframe containing those features.
 
-### Problems?
+Feature descriptions are strings like:
 
-"customer.flex_plans" has pivots [customer, CMONTH(date)]. That seems wrong – why would CMONTH(date) be there?
+```
+TIME_SINCE_SEEN(Order_item.SUM(quantity|DATE(order.date),order.customer))
+```
 
 
-### Setup
 
 ```
 virtualenv venv -p python3.7
 ```
 
-### Developer gui
+### Code
 
 - `feat/globals` List of manipulation functions.
+
+
+### FIX
+
+TIME_SINCE(Customer{customer=id}.created) works, but TIME_SINCE(customer.created) fails.

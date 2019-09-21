@@ -54,25 +54,29 @@ class Frame(object):
 
 
   def fill_data(self, df, fillnan=None, dtype=None):
-    # print("self.name", self, self.df is not None and self.df.columns, df.columns)
+    """
+    Fill the current frame with the `df` dataframe. In `df` we expect to find
+    one column for each pivot in this frame (ie. self.pivots) and one column
+    for the main column in this frame (ie. self.name).
+    """
     
     if self.df is not None:
-      print("YOU ARE REFILLING DATA BRO")
+      print("WARNING: You are refilling data, bro!")
     
-    assert type(df) == pd.DataFrame
+    # Check that the dataframe has all the right columns etc.
+    assert isinstance(df, pd.DataFrame)
     for col in self.pivots:
       assert col in df.columns, 'Pivot col \'%s\' not found in %s' % (col, df.columns)
     assert self.name in df.columns, '%s not in %s' % (self.name, df.columns)
-
     assert df[~df[self.name].isna()].shape[0] > 0, "Empty dataset?"
 
     self.fillnan = fillnan
     self.dtype = dtype
     # if df.drop_duplicates().shape[0] != df.shape[0]:
     #   print("WARNING: frame %s filled with duplicate data" % self)
+    
     # NOTE THIS IS NEW!!!!
     all_columns = list(set([*self.pivots, self.name]))
-    
     self.df = drop_hashable_duplicates(df.copy()[all_columns])
 
 

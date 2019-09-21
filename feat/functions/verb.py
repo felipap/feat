@@ -10,7 +10,7 @@ import pyjson5
 from pandas.io.json import json_normalize
 
 from ..lib.workarounds import drop_hashable_duplicates
-from ..lib.cmonth import date_to_cmonth
+from ..lib.tblock import date_to_cmonth
 from .lib.lib import fancy_apply, can_collapse_date, uncollapse_date
 
 # Add tests to make sure sizes are changed?

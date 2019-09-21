@@ -11,9 +11,9 @@ import json
 import pandas as pd
 from timeit import default_timer as timer
 
-df_path = os.path.join(os.path.dirname(__file__), '../..')
+df_path = os.path.join(os.path.dirname(__file__), '..')
 sys.path.append(df_path)
-import assembler
+import feat
 
 
 def load_namespace_from_file(filepath):
@@ -70,39 +70,34 @@ TYPES = {
 
 
 FEATURES = [
-  # "SHIFT(customer.flex_status,1)",
+  # "Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer)",
+  # "ACCUMULATE(CSINCE(Order.COUNT(id|customer,DATE(date))))",
+  # "TIME_SINCE_SEEN(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer))",
   # "GREATERTHAN(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer),0)",
-  # "STREND(Order.COUNT(id|DATE(date),customer))",
+  # "TIME_SINCE(Customer{customer=id}.created)",
   # "Order.LATEST(JSON_GET(discounts,\"[0]['code']\")|customer,DATE(date))",
   # "Order.LATEST(JSON_GET(refund,\"[0]['status']\")|customer,DATE(date))",
-  # "customer.school_delivery",
+  "STREND(Order.COUNT(id|DATE(date),customer))",
+  # # "customer.school_delivery",
   # "customer.source",
   # "JSON_GET(customer.flex_plan,\"['items'][0]['id']\")",
   # "JSON_GET(customer.flex_plan,\"['items'][0]['quantity']\")",
-  # "JSON_GET(customer.flex_plan,\"['items'][0]['flavor']\")",
+  # # "JSON_GET(customer.flex_plan,\"['items'][0]['flavor']\")",
+  # "customer.created",
   # "customer.flex_status",
-  # "SHIFT(customer.flex_status,2)",
+  # # "SHIFT(customer.flex_status,1)",
+  # # "SHIFT(customer.flex_status,2)",
   # "JSON_GET(customer.shipping_address,\"['state']\")",
-  # "ACCUMULATE(CSINCE(Order.COUNT(id|customer,DATE(date))))",
   # "CSINCE(Order.COUNT(id|customer,DATE(date)))",
-  # "SHIFT(CSINCE(Order.COUNT(id|customer,DATE(date))),1)",
-  # "SHIFT(CSINCE(Order.COUNT(id|customer,DATE(date))),2)",
-  # "TIME_SINCE(Customer{customer=id}.created)",
-  # "Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer)",
-
-  "TIME_SINCE_SEEN(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer))",
-  "SHIFT(TIME_SINCE_SEEN(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer)), 1)",
-  "SHIFT(TIME_SINCE_SEEN(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer)), 2)",
-
-  # "Order_item{__date__=DATE(order.date);customer=order.customer}.TSINCESEEN(DATE(order.date),DATE(order.date)|order.customer,DATE(order.date))",
-  # "SHIFT(Order_item{__date__=DATE(order.date);customer=order.customer}.TSINCESEEN(DATE(order.date),DATE(order.date)|order.customer,DATE(order.date)), 1)",
-
-  # "EMAIL_DOMAIN(customer.email)",
+  # # "SHIFT(CSINCE(Order.COUNT(id|customer,DATE(date))),1)",
+  # # "SHIFT(CSINCE(Order.COUNT(id|customer,DATE(date))),2)",
   # "DOMAIN_EXT(EMAIL_DOMAIN(customer.email))",
   # "ACCUMULATE(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|order.customer,DATE(order.date)))",
-  # "SHIFT(ACCUMULATE(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|order.customer,DATE(order.date))),1)",
-  # "SHIFT(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer),1)",
-  # "SHIFT(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer),2)",
+  # # "SHIFT(ACCUMULATE(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|order.customer,DATE(order.date))),1)",
+  # # "SHIFT(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer),1)",
+  # # "SHIFT(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer),2)",
+  # # "SHIFT(TIME_SINCE_SEEN(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer)), 1)",
+  # # "SHIFT(TIME_SINCE_SEEN(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer)), 2)",
   # "Order.SUM(JSON_GET(paid,\"['subtotal']\")|customer,DATE(date))",
   # "Order.SUM(JSON_GET(paid,\"['discountTotal']\")|customer,DATE(date))",
   # "Order.LATEST(order_type|customer,DATE(date))",
@@ -113,7 +108,7 @@ FEATURES = [
   # "Order.LATEST(DT_MONTH_OF_THE_YEAR(created)|customer,DATE(date))",
   # "CP_CHANGED(JSON_GET(customer.flex_plan,\"['items'][0]['id']\"))",
   # "CP_CHANGED(JSON_GET(customer.flex_plan,\"['items'][0]['quantity']\"))",
-  # "CP_CHANGED(JSON_GET(customer.flex_plan,\"['items'][0]['flavor']\"))",
+  # # "CP_CHANGED(JSON_GET(customer.flex_plan,\"['items'][0]['flavor']\"))",
 ]
 
 
@@ -126,16 +121,24 @@ async def main():
   # dataframes = pickle.load(open('./neuron_assembler_small_df.pickle', 'rb'))
 
   dataframes['customer'].rename(columns={ 'CMONTH(date)': '__date__' }, inplace=True)
+  # dataframes['customer'] = dataframes['customer'][dataframes['customer'].id == '5d430b531a55d200152297fb']
+  # dataframes['order'] = dataframes['order'][dataframes['order'].customer == '5d430b531a55d200152297fb']
+
+  print("dataframes", dataframes['customer'].size, dataframes['order'].size)
   
   # dataframes['customer']['__date__'] = dataframes['customer']['__date__'].astype('datetime64[ns]')
 
+  import ptvsd
+  ptvsd.enable_attach(address=('localhost', 5678), redirect_output=True)
+  ptvsd.wait_for_attach()
+
   config = {
-    'date_block': 'DATE(date)',
+    'block_type': 'week',
     'pointers': {'customer': 'customer.id'},
-    "date_range": ["2017-11", "2019-7"],
+    "date_range": ["2017-11-01", "2019-9-14"],
   }
   
-  result = assembler.assemble(FEATURES, config, TYPES, dataframes)
+  result = feat.assemble(FEATURES, config, TYPES, dataframes)
   pickle.dump(result, open('./neuron_trash_assemblertest_result.pickle', 'wb'))
   result = pickle.load(open('./neuron_trash_assemblertest_result.pickle', 'rb'))
 

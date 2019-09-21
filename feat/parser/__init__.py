@@ -1,3 +1,3 @@
 
-from .parse import parseLineToCommand
-from .Tree import Tree 
+from .parse import parse_feature
+from .Command import Command

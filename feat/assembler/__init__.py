@@ -1,3 +1,3 @@
 
-from .assembler import assemble_column
-from .assemble_features import assemble_features
+from .column import assemble_column
+from .index import assemble_many

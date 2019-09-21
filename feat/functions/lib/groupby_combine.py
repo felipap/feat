@@ -6,13 +6,15 @@ from timeit import default_timer as timer
 import numpy as np
 import pandas as pd
 
-def split_respecting_boundaries(records, keys, num_split=10):
+def split_respecting_boundaries(dataframe, keys, num_split=10):
   """
   Split an array of records in `num_split` semi-even chunks, while respecting
   that records with the same keys should never be put in separate chunks.
   """
   
-  sorted_df = records.sort_values(keys).to_dict('records')
+  assert isinstance(dataframe, pd.DataFrame)
+  
+  sorted_df = dataframe.sort_values(keys).to_dict('records')
   chunks = list(map(list, np.array_split(sorted_df, num_split)))
 
   def belong_together(row1, row2):
@@ -33,45 +35,47 @@ def split_respecting_boundaries(records, keys, num_split=10):
   # Remove all empty chunks for good measure.
   return list(filter(lambda c: len(c) > 0, chunks))
 
-def process_df_chunk(info):
-  cols = info['cols']
-  date_counts = info['date_counts']
-  df = info['df']
-  fn = info['fn']
-  time_col = info['time_col']
+def process_df_chunk(chunk):
+  columns = chunk['columns']
+  date_counts = chunk['date_counts']
+  records = chunk['records']
+  function = chunk['function']
+  time_col = chunk['time_col']
 
-  if len(df) == 0:
+  if len(records) == 0:
     return []
 
   def dogroup_flat(rows):    
-    keys = { col: rows[0][col] for col in cols }
+    keys = { col: rows[0][col] for col in columns }
     asdict = { r[time_col]: r for r in rows }
-    sparsedict = { d: asdict.get(d) for d in date_counts }
-    results = fn(keys, sparsedict)
+    datetovalue = { d: asdict.get(d) for d in date_counts }
+    results = function(keys, datetovalue)
 
     ret = []
-    for (tcount, row) in sparsedict.items():
+    for (tcount, row) in datetovalue.items():
       ret.append(dict(keys, _tcount_=tcount, _result_=results.get(tcount)))
     return ret
 
-  result = []
-  
-  row_keys = df[0].keys()
-  last = tuple(df[0][col] for col in cols)
+  groups = []
+  # Loop records sorted by their key values. Use `last_key_values` and `this`
+  # to accumulate all the records with the same key values.
+  last_key_values = tuple(records[0][col] for col in columns)
   accumulated = []
-  for el in df:
-    this = tuple(el[col] for col in cols)
-    if last != this:
-      # print(last, this)
-      # if len(accumulated) > 5:
-      #   print("EUREKA")
-      result.extend(dogroup_flat(accumulated))
-      accumulated = [el]
-      last = this
+  for record in records:
+    this = tuple(record[col] for col in columns)
+    if last_key_values == this:
+      accumulated.append(record)
     else:
-      accumulated.append(el)
-  if len(accumulated) > 0:
-    result.extend(dogroup_flat(accumulated))
+      groups.append(accumulated)
+      accumulated = [record]
+      last_key_values = this
+  if accumulated:
+    groups.append(accumulated)
+
+  # For each group, call `dogroup_flat`, which wraps `function`.
+  result = []
+  for group in groups:
+    result.extend(dogroup_flat(group))
   return result
     
 def groupby_combine(df):

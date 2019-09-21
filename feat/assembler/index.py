@@ -4,9 +4,23 @@ from timeit import default_timer as timer
 import pandas as pd
 
 from ..common.Context import Context
-from .assembler import assemble_column
+from .column import assemble_column
 
-def assemble_features(graph, output, trees, date_block):
+def validate_intermediary(context, tree, _):
+  """
+  Miscellaneous tests that the output is OK.
+  """
+  
+  # Calling assemble_column with context.current set to 'output' should take
+  # care of merging the assembled columns with the Output dataframe.
+  if not context.output.has_column(tree.get_name()):
+    raise Exception('Something went wrong')
+
+  df = context.df
+  print(df[(df.customer == '5d430b531a55d200152297fb')&(df.__date__==2581)].shape[0])
+
+
+def assemble_many(graph, output, trees, block_type):
   """
   Assemble a list of features based on a graph of tables and pointers between
   them.
@@ -14,22 +28,18 @@ def assemble_features(graph, output, trees, date_block):
   
   # The context holds the state of the program as it explores the tree of
   # trees and assembles the data.
-  print("date block is", date_block)
-  context = Context(graph, output)
+  print("date block is", block_type)
+  context = Context(graph, output, block_type)
   
   for index, tree in enumerate(trees):
     print(colorful.green(f'Feature {index+1}/{len(trees)}:'), tree.get_name())
 
     start = timer()
-    result = assemble_column(context, tree._nested)
+    result = assemble_column(context, tree)
     end = timer()
 
-    # Calling assemble_column with context.current set to 'output' should take
-    # care of merging the assembled columns with the Output dataframe.
-    if not context.output.has_column(result.name):
-      raise Exception('Something went wrong')
-    
-    print("elapsed: %.2fs" % (end - start))
+    validate_intermediary(context, tree, result)
+    print("Feature took: %.2fs" % (end - start))
   
   # # Assert no duplicate features (which might break things later)
   # if sorted(list(set(to_return.columns))) != sorted(to_return.columns):
