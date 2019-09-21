@@ -33,7 +33,7 @@ def load_namespace_from_file(filepath):
   return dfs
 
 
-TYPES = {
+table_configs = {
   "customer": {
     "key": "id",
     # "types": {
@@ -69,11 +69,11 @@ TYPES = {
 }
 
 
-FEATURES = [
-  # "Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer)",
-  # "Order.COUNT(id|customer,DATE(date))",
-  # "ACCUMULATE(CSINCE(Order.COUNT(id|customer,DATE(date))))",
-  # "TIME_SINCE_SEEN(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer))",
+features = [
+  "Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer)",
+  "Order.COUNT(id|customer,DATE(date))",
+  "ACCUMULATE(CSINCE(Order.COUNT(id|customer,DATE(date))))",
+  "TIME_SINCE_SEEN(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer))",
   # "GREATERTHAN(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer),0)",
   # "TIME_SINCE(Customer{customer=id}.created)",
   # "Order.LATEST(JSON_GET(discounts,\"[0]['code']\")|customer,DATE(date))",
@@ -84,32 +84,32 @@ FEATURES = [
   # "JSON_GET(customer.flex_plan,\"['items'][0]['id']\")",
   # "JSON_GET(customer.flex_plan,\"['items'][0]['quantity']\")",
   # # "JSON_GET(customer.flex_plan,\"['items'][0]['flavor']\")",
-  "customer.created",
-  "customer.flex_status",
-  # "SHIFT(customer.flex_status,1)",
-  # "SHIFT(customer.flex_status,2)",
-  "JSON_GET(customer.shipping_address,\"['state']\")",
-  "CSINCE(Order.COUNT(id|customer,DATE(date)))",
-  # "SHIFT(CSINCE(Order.COUNT(id|customer,DATE(date))),1)",
-  # "SHIFT(CSINCE(Order.COUNT(id|customer,DATE(date))),2)",
-  "DOMAIN_EXT(EMAIL_DOMAIN(customer.email))",
-  "ACCUMULATE(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|order.customer,DATE(order.date)))",
-  # "SHIFT(ACCUMULATE(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|order.customer,DATE(order.date))),1)",
-  # "SHIFT(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer),1)",
-  # "SHIFT(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer),2)",
-  # "SHIFT(TIME_SINCE_SEEN(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer)), 1)",
-  # "SHIFT(TIME_SINCE_SEEN(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer)), 2)",
-  "Order.SUM(JSON_GET(paid,\"['subtotal']\")|customer,DATE(date))",
-  "Order.SUM(JSON_GET(paid,\"['discountTotal']\")|customer,DATE(date))",
-  "Order.LATEST(order_type|customer,DATE(date))",
-  "Order.LATEST(source|customer,DATE(date))",
-  "Order.LATEST(JSON_GET(shipping,\"['shippingType']\")|customer,DATE(date))",
-  "Order.LATEST(DT_DAY_OF_THE_WEEK(created)|customer,DATE(date))",
-  "Order.LATEST(DT_DAY_OF_THE_MONTH(created)|customer,DATE(date))",
-  "Order.LATEST(DT_MONTH_OF_THE_YEAR(created)|customer,DATE(date))",
-  "CP_CHANGED(JSON_GET(customer.flex_plan,\"['items'][0]['id']\"))",
-  "CP_CHANGED(JSON_GET(customer.flex_plan,\"['items'][0]['quantity']\"))",
-  # "CP_CHANGED(JSON_GET(customer.flex_plan,\"['items'][0]['flavor']\"))",
+  # "customer.created",
+  # "customer.flex_status",
+  # # "SHIFT(customer.flex_status,1)",
+  # # "SHIFT(customer.flex_status,2)",
+  # "JSON_GET(customer.shipping_address,\"['state']\")",
+  # "CSINCE(Order.COUNT(id|customer,DATE(date)))",
+  # # "SHIFT(CSINCE(Order.COUNT(id|customer,DATE(date))),1)",
+  # # "SHIFT(CSINCE(Order.COUNT(id|customer,DATE(date))),2)",
+  # "DOMAIN_EXT(EMAIL_DOMAIN(customer.email))",
+  # "ACCUMULATE(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|order.customer,DATE(order.date)))",
+  # # "SHIFT(ACCUMULATE(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|order.customer,DATE(order.date))),1)",
+  # # "SHIFT(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer),1)",
+  # # "SHIFT(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer),2)",
+  # # "SHIFT(TIME_SINCE_SEEN(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer)), 1)",
+  # # "SHIFT(TIME_SINCE_SEEN(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer)), 2)",
+  # "Order.SUM(JSON_GET(paid,\"['subtotal']\")|customer,DATE(date))",
+  # "Order.SUM(JSON_GET(paid,\"['discountTotal']\")|customer,DATE(date))",
+  # "Order.LATEST(order_type|customer,DATE(date))",
+  # "Order.LATEST(source|customer,DATE(date))",
+  # "Order.LATEST(JSON_GET(shipping,\"['shippingType']\")|customer,DATE(date))",
+  # "Order.LATEST(DT_DAY_OF_THE_WEEK(created)|customer,DATE(date))",
+  # "Order.LATEST(DT_DAY_OF_THE_MONTH(created)|customer,DATE(date))",
+  # "Order.LATEST(DT_MONTH_OF_THE_YEAR(created)|customer,DATE(date))",
+  # "CP_CHANGED(JSON_GET(customer.flex_plan,\"['items'][0]['id']\"))",
+  # "CP_CHANGED(JSON_GET(customer.flex_plan,\"['items'][0]['quantity']\"))",
+  # # "CP_CHANGED(JSON_GET(customer.flex_plan,\"['items'][0]['flavor']\"))",
 ]
 
 async def main():
@@ -128,17 +128,20 @@ async def main():
   
   # dataframes['customer']['__date__'] = dataframes['customer']['__date__'].astype('datetime64[ns]')
 
-  # import ptvsd
-  # ptvsd.enable_attach(address=('localhost', 5678), redirect_output=True)
-  # ptvsd.wait_for_attach()
-
-  config = {
-    'block_type': 'week',
-    'pointers': {'customer': 'customer.id'},
-    "date_range": ["2017-11-01", "2019-9-14"],
-  }
+  import ptvsd
+  ptvsd.enable_attach(address=('localhost', 5678), redirect_output=True)
+  ptvsd.wait_for_attach()
   
-  result = feat.assemble(FEATURES, config, TYPES, dataframes)
+  result = feat.assemble(
+    features,
+    dataframes,
+    table_configs,
+    output_config=dict(
+      customer='customer.id',
+      __date__=["2017-11-01", "2019-9-14"],
+    ),
+    block_type='week',
+  )
   pickle.dump(result, open('./neuron_trash_assemblertest_result.pickle', 'wb'))
   result = pickle.load(open('./neuron_trash_assemblertest_result.pickle', 'rb'))
 

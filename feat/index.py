@@ -51,11 +51,14 @@ def validate_result(assembled):
       assembled[column] = assembled[column].astype(str)
 
 
-def assemble(features, config, table_configs, dataframes):
+def assemble(features, dataframes, table_configs, output_config, block_type='month'):
   """
   Use the input dataframes and configurations to create the tables and
   initialize the data graph.
   """
+
+  if block_type not in ['month', 'week']:
+    raise Exception()
 
   graph = Graph()
   for table_name, table_config in table_configs.items():
@@ -63,22 +66,23 @@ def assemble(features, config, table_configs, dataframes):
     if not table_name in dataframes:
       raise Exception(f'Dataframe for table {table_name} was not supplied.')
 
-    table = create_table_from_config(table_name, table_config, dataframes.pop(table_name), config['block_type'])
+    table = create_table_from_config(table_name, table_config, dataframes.pop(table_name), block_type)
     graph.add_table(table)
 
-  output = Output(graph.tables, config['pointers'], config['date_range'], config['block_type'])
+  output = Output(graph.tables, output_config, block_type)
   graph.add_output(output)
   graph.wrap()
 
   command_trees = parse_features(features)
-  assembled = assemble_many(graph, output, command_trees, config['block_type'])
+  assembled = assemble_many(graph, output, command_trees, block_type)
 
   validate_result(assembled)
   # Translate cmonth values to datetimes.
   # mapping = { c: date_yearmonth(cmonth_to_date(c)) for c in range(570, 650) }
-  mapping = { c: datetime.strftime(cweek_to_date(c), '%Y-%m-%d') for c in range(2489, 2585) }
+  mapping = { c: datetime.strftime(cweek_to_date(c), '%Y-%m-%d') for c in range(2495, 2595) }
 
   # print("map is", mapping)
-  assembled['CMONTH(date)'] = assembled['__date__'].replace(mapping)
+  assembled['__dcount__'] = assembled['__date__'].replace(mapping)
+  assembled['__date__'] = assembled['__date__'].replace(mapping)
 
   return assembled

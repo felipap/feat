@@ -27,10 +27,6 @@ def create_table_from_config(name, table_config, df, block_type):
   keys = [table_config['key']]
   extended_keys = keys + (date_key and [date_key] or [])
 
-  if df.duplicated(extended_keys).any():
-    print(f'Dropping duplicates in df {name}.')
-    df = df.drop_duplicates(keys)
-
   return Table(name, df, keys, table_config.get('pointers', {}), date_key)
 
 

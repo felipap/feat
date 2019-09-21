@@ -4,7 +4,6 @@ from typing import Dict, List, Set
 
 from ..lib.workarounds import drop_hashable_duplicates
 
-DATE_FIELD = '__date__'
 
 class Frame(object):
   """
@@ -122,14 +121,17 @@ class Frame(object):
       # Nothing to do here.
       return
 
+    DATE_FIELD = '__date__'
+
     # if current == 'output':
     if not translation:
       forced_translation: Dict[str, str] = {}
       for pivot in self.pivots:
-        if pivot.startswith('CMONTH'):
-          print(f'Inferring {pivot} to translate to {DATE_FIELD}')
-          forced_translation[DATE_FIELD] = pivot
+        # if pivot.startswith('CMONTH'):
+        #   print(f'Inferring {pivot} to translate to {DATE_FIELD}')
+        #   forced_translation[DATE_FIELD] = pivot
         # TODO get rid of this
+        
         if pivot.startswith('DATE'):
           print(f'Inferring {pivot} to translate to {DATE_FIELD}')
           forced_translation[DATE_FIELD] = pivot

@@ -91,7 +91,8 @@ def make_per_group(innerfn, fillna=0):
     # Make sure that the date values found in this dataframe are a subset of
     # the values from ctx.get_date_range().
     if not set(df[child.get_date_col()].unique()).issubset(date_counts):
-      raise Exception()
+      print(set(df[child.get_date_col()].unique()) - set(date_counts))
+      # raise Exception()
 
     start = timer()
     groups = _get_groups(df, keyminustime)

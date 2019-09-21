@@ -1,6 +1,6 @@
 
-from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from datetime import datetime, timedelta
 
 def date_to_cmonth(date):
   if isinstance(date, str):
@@ -8,16 +8,42 @@ def date_to_cmonth(date):
   assert isinstance(date, datetime)
   return (date.year-1970)*12+date.month
 
-def date_to_cweek(date):
-  # https://stackoverflow.com/questions/2600775
-  assert isinstance(date, datetime)
-  year, week = date.isocalendar()[:2]
-  return (year-1970)*52+week
+def date_to_cweek(date: datetime):
+  first_sunday = datetime(1970, 1, 4)
+  days_since = (date - first_sunday).days
+
+  return days_since // 7
+  # # https://stackoverflow.com/questions/2600775
+  # assert isinstance(date, datetime)
+  # year, week = date.isocalendar()[:2]
+  # return (year-1970)*52+week
 
 def cweek_to_date(cweek):
-  year = cweek // 52 + 1970
-  nweek = cweek % 52
-  return datetime(year, 1, 1) + relativedelta(weeks=nweek-1)
+  first_sunday = datetime(1970, 1, 4)
+  return first_sunday + relativedelta(days=7*cweek)
+
+def make_week_starts(start, end, starts_on='sunday'):
+  """
+  """
+  if start >= end:
+    raise Exception()
+  
+  if starts_on == 'sunday':
+    if start.weekday() != 6:
+      # Calculate closest following sunday.
+      start = start + timedelta(6 - start.weekday())
+      # assert start.weekday() == 0, "This should be a Sunday!"
+  else:
+    print('Start on Sundays to match th elogic of Moment.js.')
+    raise NotImplementedError()
+
+  weeks = []
+  curr = start
+  while curr <= end:
+    weeks.append(curr)
+    curr += relativedelta(weeks=1)
+  return weeks
+
 
 def cmonth_to_date(cmonth):
   base_date = datetime(1970, 1, 1)

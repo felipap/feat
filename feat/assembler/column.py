@@ -2,30 +2,15 @@
 
 import types
 import time
-from functools import wraps
 
 import numpy as np
 import pandas as pd
 
 import sys
 sys.path.append('..')
-from ..common import Frame, assert_returns_frame
+from ..common import Frame, assert_returns_frame, assemble_column_log_errors
 from ..functions import getFunction
 from ..parser.Command import Command
-
-def assemble_column_log_errors(inner):
-  @wraps(inner)
-  def outer(ctx, tree):
-    try:
-      result = inner(ctx, tree)
-    except Exception as e:
-      print("^ Error with", ctx.current, tree.get_name())
-      raise e
-    assert result.__class__.__name__ == 'Frame', result.__class__.__name__
-    # assert isinstance(result, Frame) # Won't work with jupyter autoreload.
-    # assert isinstance(result, Frame), "%s isn't Frame" % result
-    return result
-  return outer
 
 @assert_returns_frame
 def assemble_function(context, tree):

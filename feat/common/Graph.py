@@ -91,7 +91,7 @@ class Graph(object):
     self.output = output
     self.tables['output'] = output
 
-    self.add_node('output', [output.DATE_FIELD, *output.get_pointers().keys()])
+    self.add_node('output', [output.get_date_field(), *output.get_pointers().keys()])
 
   ###
 
