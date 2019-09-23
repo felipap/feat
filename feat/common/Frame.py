@@ -37,6 +37,7 @@ class Frame(object):
   def get_pivots(self):
     return self.pivots
 
+  
   def get_date_col(self):
     if '__date__' in self.df.columns:
       return '__date__'
@@ -44,6 +45,7 @@ class Frame(object):
       return 'DATE(date)'
     raise Exception('WTF')
 
+  
   def copy(self):
     frame = Frame(self.name, self.table, self.pivots)
     frame.fillnan = self.fillnan
@@ -98,7 +100,6 @@ class Frame(object):
 
 
   def rename(self, new):
-    # print("RENAME: %s to %s", self.name, new)
     old = self.name
     self.name = new
     self.df.rename(
@@ -106,86 +107,86 @@ class Frame(object):
       inplace=True
     )
     
-    # self.pivots = [p]
 
-
-  def translate_pivots_root(self, ctx, current, translation):
+  def translate_pivots_root(self, ctx, parent, translation):
     """
+    Args:
+      parent: the name of the parent node's table (ie. the upper-level's
+        `current`)
+
     # TODO
     # If a pivot in result is 'order.user' and if 'user' (ie. 'Users.id')
     # is a pivot of Output, we have to rename 'order.user' somehow to make it
     # work.
     """
  
-    if set(self.pivots).issubset(ctx.df.columns):
-      # Nothing to do here.
+    need_translation = set(self.pivots) - set(ctx.df.columns)
+    # NOTE this assumes that fields with the same name should be automatically
+    # translated to each other.
+    if not need_translation:
       return
-
-    DATE_FIELD = '__date__'
-
-    # if current == 'output':
-    if not translation:
-      forced_translation: Dict[str, str] = {}
-      for pivot in self.pivots:
-        # if pivot.startswith('CMONTH'):
-        #   print(f'Inferring {pivot} to translate to {DATE_FIELD}')
-        #   forced_translation[DATE_FIELD] = pivot
-        # TODO get rid of this
-        
-        if pivot.startswith('DATE'):
-          print(f'Inferring {pivot} to translate to {DATE_FIELD}')
-          forced_translation[DATE_FIELD] = pivot
-      if forced_translation:   
-        translation = forced_translation
-    assert translation, "A translation is required for column %s" % self.name
-
+ 
+    # Try first with user-provided translation instructions (Table{a=b} syntax).
     replace = {}
-    for new, old in translation.items():
-      print("> translating pivot %s to %s" % (new, old))
-      assert old in self.df.columns, f'{old} in {self.df.columns}'
-          
-      replace[old] = new
-      self.pivots = list(map(lambda x: x if x != old else new, self.pivots))
+    if translation:
+      for new, old in translation.items():
+        # Translating pivot from `old` to `new`.
+        assert old in self.df.columns, f'{old} in {self.df.columns}'
+        replace[old] = new
+        need_translation.remove(old)
+
+    # Next, if needed, try to infer what should be translate to what. This
+    # behavior might lead to unexpected results, so warn the user appropriately.
+    if need_translation:
+      for pivot in need_translation.copy():
+        translation = self._infer_column_translation(ctx, parent, pivot)
+        if translation:
+          replace[pivot] = translation
+          need_translation.remove(pivot)
+
+    # Next, try to match a date field in the child to a date field in the
+    # parent.
+    if need_translation:
+      for pivot in need_translation.copy():
+        if pivot.startswith('DATE'):
+          if parent == 'output':
+            replace[pivot] = ctx.output.get_date_field()
+            need_translation.remove(pivot)
+          else:
+            raise Exception('is date but dont know what to do')
+    
+    # Next, give up.
+    if need_translation:
+      raise Exception(need_translation)
     
     self.df.rename(columns=replace, inplace=True)
+    self.pivots = { replace.get(e, e) for e in self.pivots }
 
-    # print("translation!", self.pivots, self.df.columns)
 
-    # NOTE Code below is good, but it implements inferred translation. Code
-    # above implements explicit translation (uses Table{a=b} syntax).
-    # for col in self.pivots.copy():
-    #   if col == 'CMONTH(date)':
-    #     continue
-    #
-    #   # print(current, tableIn, colIn, ctx.pointers)
-    #   info = ctx.graph.get_leaf_information(self.table_name, col)
-    #   if not info:
-    #     raise Exception('graph.get_leaf_information failed', self.table_name, col)
-    #   tableIn, colIn = info
-    #
-    #   pointers = ctx.findGraphEdge(tableOut=current, tableIn=tableIn, colIn=colIn)
-    #   if not pointers:
-    #     raise Exception('Failed to translate %s to table %s' % (col, current))
-    #
-    #   # REVIEW: what are the cons of this??? what if we don't want to match
-    #   # them>??? Does the colIn field have to be unique?
-    #   if len(pointers) > 1:
-    #     # BUG we don't want this exactly.
-    #     # Child.father -> Parent and Child.mother -> Parent.
-    #     # We should offer some pattern matching.
-    #     raise Exception('Multiple edges found to %s' % tableIn)
-    #
-    #   # Rename pivot to col1 (ie. pointers[0][1])
-    #
-    #   translation = pointers[0][1]
-    #   print("> Matching attribute found for {}: {}.{} points to {}.{}".format(col, *pointers[0]))
-    #
-    #   if translation == col:
-    #     print("Already called that. Skip.")
-    #     continue
-    #   # elif translation in self.pivots:
-    #   #   raise Exception('Should')
-    #   self.pivots = list(map(lambda x: x if x != col else translation, self.pivots))
-    #   self.df.rename(columns={col:translation}, inplace=True)
-    #
-    # print("New pivots:%s columns:%s" % (self.pivots, self.df.columns))
+  def _infer_column_translation(self, ctx, parent, column):
+    info = ctx.graph.get_leaf_information(self.table.get_name(), column)
+    if not info:
+      # Nothing on this edge.
+      return None
+    table_in, col_in = info
+    print(parent, table_in, col_in)
+  
+    pointers = ctx.graph.find_edge(tableOut=parent, tableIn=table_in, colIn=col_in)
+    if not pointers:
+      raise Exception('Failed to translate %s to table %s' % (column, parent))
+  
+    # REVIEW: what are the cons of this??? what if we don't want to match
+    # them>??? Does the col_in field have to be unique?
+    if len(pointers) > 1:
+      # BUG we don't want this exactly.
+      # Child.father -> Parent and Child.mother -> Parent.
+      # We should offer some pattern matching.
+      raise Exception('Multiple edges found to %s' % table_in)
+  
+    # Rename pivot to col1 (ie. pointers[0][1])
+  
+    translation = pointers[0][1]
+    print("> Matching attribute found for {}: {}.{} points to {}.{}".format(column, *pointers[0]))
+    return translation
+
+

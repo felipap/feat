@@ -1,12 +1,9 @@
 
-from datetime import datetime, timedelta
-from dateutil import relativedelta
-import time
+from datetime import datetime
 
 from ..lib.gen_cartesian import gen_cartesian
 from .lib.lib import can_collapse_date
 from ..lib.tblock import date_to_cmonth, cmonth_to_date
-from .lib.per_group import make_per_group
 
 import numpy as np
 import pandas as pd

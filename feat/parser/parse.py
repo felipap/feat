@@ -3,6 +3,7 @@
 from os import path
 from functools import wraps
 import importlib
+from typing import List, Set, Dict
 from lark import Lark, Transformer, v_args, Token, Tree
 
 from .Command import Command
@@ -141,6 +142,7 @@ class JSONifier(Transformer):
   number = v_args(inline=True)(float)
   string = v_args(inline=True)(str)
 
+
 def parse_feature(string):
   grammar = open(GRAMMAR_FILE_PATH).read()
 
@@ -156,3 +158,25 @@ def parse_feature(string):
   transformed = JSONifier(string).transform(raw)
   
   return Command(transformed)
+
+
+def parse_features(features: List[str]):
+  """
+  Parse a list of strings into their respective Command objects.
+  """
+  
+  if len(set(features)) < len(features):
+    print("Duplicate features found:", len(set(features)), len(features))
+    found = set()
+    for feature in features:
+      if feature in found:
+        continue
+      if features.count(feature) > 1:
+        print("–", feature)
+        found.add(feature)
+    raise Exception()
+  
+  commands = []
+  for feature in features: # REVIEW no need to validate tree?
+    commands.append(parse_feature(feature))
+  return commands

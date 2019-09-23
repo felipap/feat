@@ -1,8 +1,9 @@
 
 from . import default
 from . import counts
-from . import verb
+from . import nested
 from . import compare
+from . import future
 from . import stats
 from . import formatter
 from . import datetime
@@ -10,8 +11,9 @@ from . import datetime
 ALL_PACKS = [
   default.functions,
   counts.functions,
-  verb.functions,
+  nested.functions,
   compare.functions,
+  future.functions,
   stats.functions,
   formatter.functions,
   datetime.functions,
@@ -46,3 +48,4 @@ def getFunction(name: str):
   if name in FUNCTIONS:
     return FUNCTIONS[name]
   raise Exception(f'Can\'t find function named {name}.')
+

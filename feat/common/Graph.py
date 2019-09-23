@@ -51,13 +51,14 @@ class Graph(object):
     print("CHECK DANGLING POINTERS")
 
   def add_table(self, table):
-    if not table.name.islower():
+    name = table.get_name()
+    if not name.islower():
       raise Exception('Table names must be lowercase.')
-    if table.name in self.tables:
+    if name in self.tables:
       raise Exception()
-    self.tables[table.name] = table
+    self.tables[name] = table
 
-    self.add_node(table.name, table.get_keys())
+    self.add_node(name, table.get_keys())
 
   def _build_edges(self):    
     # Must register all nodes first, and only then register the edges.
@@ -71,14 +72,15 @@ class Graph(object):
           raise Exception()
 
         in_table, in_column = pointer.split('.')
-        self.add_edge(table.name, out_column, in_table, in_column)
+        self.add_edge(table.get_name(), out_column, in_table, in_column)
 
     if not self.output:
       raise Exception('build_edges() must be called after add_output()')
 
-    for (field, pointer) in self.output.get_pointers().items():
-      in_table, in_column = pointer.split('.')
-      self.add_edge('output', field, in_table, in_column)
+    assert 'output' in self.tables
+    # for (field, pointer) in self.output.get_pointers().items():
+    #   in_table, in_column = pointer.split('.')
+    #   self.add_edge('output', field, in_table, in_column)
 
   def get_table(self, name):
     # if name == 'output':

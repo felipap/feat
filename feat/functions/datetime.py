@@ -29,7 +29,7 @@ def call_monthoftheyear(column, _):
 def call_date(ctx, value):
   date = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
 
-  if ctx['ctx'].block_type == 'month':
+  if ctx['block_type'] == 'month':
     return date_to_cmonth(date)
   else:
     return date_to_cweek(date)

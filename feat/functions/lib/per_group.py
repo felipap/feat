@@ -12,9 +12,17 @@ BE_THOROUGH = True
 
 
 def _process_chunk(chunk):
+  """
+  Run a user-defined function over the groups in a list. Groups meaning an array
+  of records that share the same set of key values. All required info to do so
+  must be passed as a single argument (eg. a dictionary), so that this function
+  can be easily parallelized using multiprocessing.Pool.
+  """
+  
   columns = chunk['columns']
   date_counts = chunk['date_counts']
   groups = chunk['groups']
+  args = chunk['args']
   function = chunk['function']
   time_col = chunk['time_col']
 
@@ -22,7 +30,11 @@ def _process_chunk(chunk):
     keys = { col: rows[0][col] for col in columns }
     asdict = { r[time_col]: r for r in rows }
     datetovalue = { d: asdict.get(d) for d in date_counts }
-    results = function(keys, datetovalue)
+
+    if args is None:
+      results = function(datetovalue)
+    else:
+      results = function(datetovalue, args)
 
     if keys['customer'] == '5d430b531a55d200152297fb':
       print("OPS")
@@ -42,8 +54,11 @@ def _process_chunk(chunk):
   return result
 
 
-# DOCUMENTETNETNENTNE
 def _get_groups(df, keyminustime):
+  """
+  Split a pandas dataframe into groups that share the same key combination.
+  """
+
   # Something must be wrong. Creating groups by looping df.groupby(keyminustime)
   # is taking 80x what's taking this hard-coded alternative:
   # for keys, group in df.groupby(keyminustime):
@@ -69,7 +84,7 @@ def _get_groups(df, keyminustime):
   return groups
 
 
-def make_per_group(innerfn, fillna=0):
+def make_per_group(innerfn, num_args=1, fillna=0, dtype=None):
   """
   Wraps around a function that takes as argument a *group*, that is, a set of
   rows with the same key(s).
@@ -110,7 +125,8 @@ def make_per_group(innerfn, fillna=0):
       columns=keyminustime,
       date_counts=date_counts,
       function=innerfn,
-      time_col="__date__", # "CMONTH(date)", # TODO SUPPORT PIVOTS
+      args=None if num_args == 1 else args[1:],
+      time_col="__date__", # TODO SUPPORT PIVOTS
     ) for chunk in chunks]
 
     if SPLIT > 1:
@@ -125,13 +141,16 @@ def make_per_group(innerfn, fillna=0):
     print("per_group took: %ds" % (timer() - start))
     final.rename(columns={ '_tcount_': child.get_date_col(), '_result_': name }, inplace=True)
 
+    if dtype:
+      print("using dtype %s" % repr(dtype))
+      final[name] = final[name].astype(dtype)
+
     result = ctx.table.create_subframe(name, pivots)
     result.fill_data(final, fillnan=fillna)
     return result
   
-
   return {
     'call': magic,
     'takes_pivots': True,
-    'num_args': 1,
+    'num_args': num_args,
   }

@@ -8,7 +8,7 @@ from ..lib.tblock import date_to_cmonth, cmonth_to_date
 
 from .lib.per_group import make_per_group
 
-def accumulate_foreach(_, rows):
+def accumulate_foreach(rows):
   """
   Accumulate _value_ across dates.
   """
@@ -22,7 +22,7 @@ def accumulate_foreach(_, rows):
     result[date] = count
   return result
 
-def csince_foreach(_, rows):
+def csince_foreach(rows):
   """
   Count times since seen _value_ set.
   """
@@ -38,7 +38,7 @@ def csince_foreach(_, rows):
     result[date] = count
   return result
 
-def timesince(_, rows):
+def timesince(rows):
   """
   For each time slot, count the difference between it and the value being looked
   at, or -9999 if that difference is negative.
@@ -63,7 +63,7 @@ def timesince(_, rows):
   return result
 
 
-def timesinceseen(_, rows):
+def timesinceseen(rows):
   """
   Count the time since we last saw a non-null value.
   """

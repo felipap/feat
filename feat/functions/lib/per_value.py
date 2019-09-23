@@ -30,7 +30,11 @@ def per_value(innerfn, fillna=0, dtype=None, num_args=1, takes_ctx=False):
     replace = {}
     for value in dataframe[name].unique():
       if takes_ctx:
-        replace[value] = innerfn(dict(ctx=ctx, args=args), value)
+        replace[value] = innerfn({
+          'ctx': ctx,
+          'args': args,
+          'block_type': ctx.output.get_block_type(),
+        }, value)
       else:
         replace[value] = innerfn(value, args)
     

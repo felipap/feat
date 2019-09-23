@@ -7,7 +7,7 @@ import pandas as pd
 
 from .lib.per_group import make_per_group
 
-def strend_foreach(key, rows):
+def strend_foreach(rows):
   result = {}
   last_few = [0,0]
   for index, date in enumerate(sorted(rows.keys())):

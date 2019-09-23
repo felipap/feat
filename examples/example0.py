@@ -70,19 +70,22 @@ table_configs = {
 
 
 features = [
-  "Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer)",
-  "Order.COUNT(id|customer,DATE(date))",
-  "ACCUMULATE(CSINCE(Order.COUNT(id|customer,DATE(date))))",
-  "TIME_SINCE_SEEN(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer))",
-  # "GREATERTHAN(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer),0)",
+  # "Order.COUNT(id|customer,DATE(date))",
+  # "FUTURE_WITHIN(Order.COUNT(id|customer,DATE(date)), 5)",
+  # # "FUTURE_WITHIN(Order.COUNT(id|customer,DATE(date)), 4)",
+  
+  # "Order_item.SUM(quantity|DATE(order.date),order.customer)",
+  # "ACCUMULATE(CSINCE(Order.COUNT(id|customer,DATE(date))))",
+  # "TIME_SINCE_SEEN(Order_item.SUM(quantity|DATE(order.date),order.customer))",
+  # "GREATERTHAN(Order_item.SUM(quantity|DATE(order.date),order.customer),0)",
   # "TIME_SINCE(Customer{customer=id}.created)",
   # "Order.LATEST(JSON_GET(discounts,\"[0]['code']\")|customer,DATE(date))",
-  # # "Order.LATEST(JSON_GET(refund,\"[0]['status']\")|customer,DATE(date))",
+  # "Order.LATEST(JSON_GET(refund,\"[0]['status']\")|customer,DATE(date))",
   # "STREND(Order.COUNT(id|DATE(date),customer))",
   # # "customer.school_delivery",
   # "customer.source",
-  # "JSON_GET(customer.flex_plan,\"['items'][0]['id']\")",
-  # "JSON_GET(customer.flex_plan,\"['items'][0]['quantity']\")",
+  "JSON_GET(customer.flex_plan,\"['items'][0]['id']\")",
+  "JSON_GET(customer.flex_plan,\"['items'][0]['quantity']\")",
   # # "JSON_GET(customer.flex_plan,\"['items'][0]['flavor']\")",
   # "customer.created",
   # "customer.flex_status",
@@ -93,12 +96,12 @@ features = [
   # # "SHIFT(CSINCE(Order.COUNT(id|customer,DATE(date))),1)",
   # # "SHIFT(CSINCE(Order.COUNT(id|customer,DATE(date))),2)",
   # "DOMAIN_EXT(EMAIL_DOMAIN(customer.email))",
-  # "ACCUMULATE(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|order.customer,DATE(order.date)))",
-  # # "SHIFT(ACCUMULATE(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|order.customer,DATE(order.date))),1)",
-  # # "SHIFT(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer),1)",
-  # # "SHIFT(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer),2)",
-  # # "SHIFT(TIME_SINCE_SEEN(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer)), 1)",
-  # # "SHIFT(TIME_SINCE_SEEN(Order_item{__date__=DATE(order.date);customer=order.customer}.SUM(quantity|DATE(order.date),order.customer)), 2)",
+  # "ACCUMULATE(Order_item.SUM(quantity|order.customer,DATE(order.date)))",
+  # # "SHIFT(ACCUMULATE(Order_item.SUM(quantity|order.customer,DATE(order.date))),1)",
+  # # "SHIFT(Order_item.SUM(quantity|DATE(order.date),order.customer),1)",
+  # # "SHIFT(Order_item.SUM(quantity|DATE(order.date),order.customer),2)",
+  # # "SHIFT(TIME_SINCE_SEEN(Order_item.SUM(quantity|DATE(order.date),order.customer)), 1)",
+  # # "SHIFT(TIME_SINCE_SEEN(Order_item.SUM(quantity|DATE(order.date),order.customer)), 2)",
   # "Order.SUM(JSON_GET(paid,\"['subtotal']\")|customer,DATE(date))",
   # "Order.SUM(JSON_GET(paid,\"['discountTotal']\")|customer,DATE(date))",
   # "Order.LATEST(order_type|customer,DATE(date))",
@@ -121,8 +124,8 @@ async def main():
   # dataframes = pickle.load(open('./neuron_assembler_small_df.pickle', 'rb'))
 
   dataframes['customer'].rename(columns={ 'CMONTH(date)': '__date__' }, inplace=True)
-  dataframes['customer'] = dataframes['customer'][dataframes['customer'].id == '5d430b531a55d200152297fb']
-  dataframes['order'] = dataframes['order'][dataframes['order'].customer == '5d430b531a55d200152297fb']
+  # dataframes['customer'] = dataframes['customer'][dataframes['customer'].id == '5d430b531a55d200152297fb']
+  # dataframes['order'] = dataframes['order'][dataframes['order'].customer == '5d430b531a55d200152297fb']
 
   print("dataframes", dataframes['customer'].size, dataframes['order'].size)
   

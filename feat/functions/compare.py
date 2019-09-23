@@ -14,7 +14,7 @@ from .lib.per_group import make_per_group
 def call_greaterthan(value, args):
   return value > args[1]
 
-def call_changed(_, rows):
+def call_changed(rows):
   '''True when a value changes from yesterday to today.'''
 
   result = {}

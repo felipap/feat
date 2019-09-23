@@ -12,8 +12,10 @@ from pandas.io.json import json_normalize
 from ..lib.workarounds import drop_hashable_duplicates
 from ..lib.tblock import date_to_cmonth
 from .lib.lib import fancy_apply, can_collapse_date, uncollapse_date
+from .lib.per_value import per_value
 
 # Add tests to make sure sizes are changed?
+
 
 def DICT_GET(ctx, name, args):
   child = args[0]
@@ -90,7 +92,11 @@ def JSON_GET(ctx, name, args):
   result.fill_data(df, fillnan=0)
   return result
 
+def get_json(value, args):
+  pass
+
 functions = {
+  'GET_JSON': per_value(get_json, fillna=-1, dtype=int, num_args=2),
   'JSON_GET': dict(call=JSON_GET, num_args=2),
   'DICT_GET': dict(call=DICT_GET, num_args=2),
 }

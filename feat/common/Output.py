@@ -6,9 +6,10 @@ import pandas as pd
 import numpy as np
 import itertools
 from functools import reduce
-from .Table import Table
 
-from ..lib.tblock import date_to_cmonth, date_to_cweek, make_week_starts
+from .Table import Table
+from ..lib.tblock import date_to_cmonth, cmonth_to_date, date_yearmonth,\
+  date_to_cweek, cweek_to_date, make_week_starts
 
 def gen_product(sets):
   """
@@ -56,8 +57,33 @@ def make_date_counts(date_range, block_type):
 
 RE_POINTER = re.compile(r'^\w+\.\w+$')
 
+
+def _validate_final_dataframe(assembled):
+  # Alert of NaN values being returned.
+  for column in assembled.columns:
+    if assembled[column].isna().any():
+      print("Column %s has NaN items " % column, assembled[column].unique())
+
+    if assembled[column].isna().any():
+      print("Column %s has NaN items " % column, assembled[column].unique())
+
+    # FIXME document this. Well wtf is this
+    if assembled[column].dtype == np.dtype('O'):
+      assembled[column] = assembled[column].astype(str)
+
+  # Assert no duplicate features (which might break things later)
+  if sorted(list(set(assembled.columns))) != sorted(assembled.columns):
+    raise Exception("Duplicate features found.")
+
 class Output(Table):
-  """ TODO """
+  """
+  Output accumulates the assembled features and centralizes the information
+  regarding the output of a feat.assemble() call. In its heart, it's a Table
+  object, with specific attributes and logic sprinkled on top.
+
+  Output hides many of the complexities of creating multiple time blocks for
+  tables with blab la bla.
+  """
 
   def __init__(self, tables, output_config, block_type):
     """
@@ -72,20 +98,27 @@ class Output(Table):
       tables: dictionary of Table, indexed by their names.
       output_config: {
         'customer': 'customer.id',
-        '__date__': ("2017-11-01", "2019-9-14"),
+        'date': ("2017-11-01", "2019-9-14"),
       }
       block_type: 'week' | 'month'
     """
     
     date_field = None
+    date_range = None
     
     pointers = {}
     for column, value in output_config.items():
-      if column.startswith('__date__'):
+      if type(value) in [list, tuple]:
+        if date_field:
+          raise Exception('Found more than one date field.')
+        print(f'Taking {column} to be the date field ({value})')
         date_field = column
         date_range = value
       else:
         pointers[column] = value
+    
+    if not date_range:
+      raise Exception("No date field specified.")
     
     print("pointers", pointers, date_field, date_range)
     assert date_field
@@ -150,17 +183,50 @@ class Output(Table):
     # It would be int16, after concatination with NaN values it becomes
     # int64, but foat16 becomes float16 even with NaNs.
 
-    self.date_field = date_field
+    self._block_type = block_type
+    self._date_field = date_field
 
     Table.__init__(self,
       'output',
       dataframe,
       list(pointers.keys()),
       pointers,
-      self.date_field,
+      self._date_field,
     )
   
+
+  def get_block_type(self):
+    return self._block_type
+
+
   def get_date_field(self):
-    return self.date_field
+    return self._date_field
+
+
+  def get_date_range(self):
+    return sorted(self.get_dataframe()[self._date_field].unique())
+
+
+  def get_final(self, col_names):
+    col_names += self.get_keys()
+    final = self.get_dataframe()[col_names]
+
+    # Translate cmonth values to datetimes.
+    if self.get_block_type() == 'month':
+      mapping = { c: date_yearmonth(cmonth_to_date(c)) for c in range(570, 650) }
+    elif self.get_block_type() == 'week':
+      mapping = { c: datetime.strftime(cweek_to_date(c), '%Y-%m-%d') for c in range(2495, 2595) }
+    else:
+      raise Exception()
+
+    date_field = self.get_date_field()
+    # print("map is", mapping)
+    final['__dcount__'] = final[date_field].replace(mapping)
+    final[date_field] = final[date_field].replace(mapping)
+
+    _validate_final_dataframe(final)
+
+    return final
+
 
 

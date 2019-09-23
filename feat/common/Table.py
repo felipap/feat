@@ -48,12 +48,15 @@ class Table(object):
     if dataframe.duplicated(extended_keys).any():
       raise Exception(f'Table {name} has duplicate values for keys')
     
-    self.name = name
+    self._name = name
     self.date_key = date_key
     self._pointers = pointers
     self._keys = keys
     self._dataframe = dataframe
     self._original_cols = dataframe.columns
+
+  def get_name(self):
+    return self._name
 
   def has_column(self, column):
     return column in self._dataframe.columns

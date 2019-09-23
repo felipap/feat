@@ -3,10 +3,9 @@ from .Frame import Frame
 import pandas as pd
 
 class Context(object):
-  def __init__(self, graph, output, block_type):
+  def __init__(self, graph, output):
     self.output = output
     self.graph = graph
-    self.block_type = block_type
     self.current = None
     self.swap_in('output')
     self.cached_frames = {}
@@ -31,7 +30,7 @@ class Context(object):
     self.graph.get_table(self.current).set_dataframe(value)
 
   def get_date_range(self):
-    return sorted(self.graph.get_table('output').get_dataframe()['__date__'].unique())
+    return self.output.get_date_range()
 
   def get_cached_frame(self, name):
     if not name in self.cached_frames:
