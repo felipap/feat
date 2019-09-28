@@ -17,7 +17,9 @@ def __get_hashable_columns(df):
   
   for column in df.columns:
     if df[column].first_valid_index() is None:
-      raise Exception()
+      print("WARNING: no valid index")
+      # raise Exception()
+      continue
     first_notnan = df[column][df[column].first_valid_index()]
     # FIXME definitely improve this list
     if isinstance(first_notnan, dict):

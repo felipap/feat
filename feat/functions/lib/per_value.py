@@ -43,7 +43,7 @@ def per_value(innerfn, fillna=0, dtype=None, num_args=1, takes_ctx=False):
     for record in records:
       record[name] = replace[record[name]]
     dataframe = pd.DataFrame(records)
-    print("\nFunction took: %s seconds" % round(timer() - start, 2))
+    print("Per value took: %s seconds" % round(timer() - start, 2), innerfn.__name__)
 
     if dtype:
       print("using dtype %s" % repr(dtype))

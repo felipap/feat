@@ -69,7 +69,8 @@ class Frame(object):
     for col in self.pivots:
       assert col in df.columns, 'Pivot col \'%s\' not found in %s' % (col, df.columns)
     assert self.name in df.columns, '%s not in %s' % (self.name, df.columns)
-    assert df[~df[self.name].isna()].shape[0] > 0, "Empty dataset?"
+    if df[~df[self.name].isna()].shape[0] == 0:
+      print("WARNING: Empty dataset?")
 
     self.fillnan = fillnan
     self.dtype = dtype

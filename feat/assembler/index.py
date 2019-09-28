@@ -30,7 +30,7 @@ def assemble_many(graph, output, trees):
   context = Context(graph, output)
   
   for index, tree in enumerate(trees):
-    print(colorful.green(f'Feature {index+1}/{len(trees)}:'), tree.get_name())
+    print(colorful.green(f'\nFeature {index+1}/{len(trees)}:'), tree.get_name())
 
     start = timer()
     result = assemble_column(context, tree)
