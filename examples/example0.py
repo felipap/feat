@@ -118,9 +118,9 @@ features = [
 async def main():
   # dataframes = load_namespace_from_file('/Users/felipe/data.json')
   # dataframes['user'].rename(columns={ '__ts__': 'DATE(date)' }, inplace=True)
-  # pickle.dump(dataframes, open('./neuron_trash_assemblertest.pickle', 'wb'))
-  # dataframes = pickle.load(open('./neuron_trash_assemblertest.pickle', 'rb'))
-  dataframes = pickle.load(open('./neuron_trash_jobs_first.pickle', 'rb'))
+  # pickle.dump(dataframes, open('./cache/neuron_trash_assemblertest.pickle', 'wb'))
+  # dataframes = pickle.load(open('./cache/neuron_trash_assemblertest.pickle', 'rb'))
+  dataframes = pickle.load(open('./cache/neuron_trash_jobs_first.pickle', 'rb'))
   # dataframes = pickle.load(open('./neuron_assembler_small_df.pickle', 'rb'))
 
   dataframes['customer'].rename(columns={ 'CMONTH(date)': '__date__' }, inplace=True)
@@ -145,8 +145,8 @@ async def main():
     ),
     block_type='week',
   )
-  pickle.dump(result, open('./neuron_trash_assemblertest_result.pickle', 'wb'))
-  result = pickle.load(open('./neuron_trash_assemblertest_result.pickle', 'rb'))
+  pickle.dump(result, open('./cache/neuron_trash_assemblertest_result.pickle', 'wb'))
+  result = pickle.load(open('./cache/neuron_trash_assemblertest_result.pickle', 'rb'))
 
   # print(result[result['customer']=='5b69c4240998ba2b42de9531'])
 

@@ -16,7 +16,7 @@ from brain.src.live import load_namespace
 # dataframes = loop.run_until_complete(load_namespace('verb', range(575, 593)))
 # print("elapsed: %ds" % (timer() - start))
 # pickle.dump(dataframes, open('dataframes.pickle', 'wb'))
-dataframes = pickle.load(open('./neuron_trash_jobs_first.pickle', 'rb'))
+dataframes = pickle.load(open('./cache/neuron_trash_jobs_first.pickle', 'rb'))
 
 type_config = {
   'customer': {

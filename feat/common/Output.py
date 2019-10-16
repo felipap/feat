@@ -215,7 +215,7 @@ class Output(Table):
     if self.get_block_type() == 'month':
       mapping = { c: date_yearmonth(cmonth_to_date(c)) for c in range(570, 650) }
     elif self.get_block_type() == 'week':
-      mapping = { c: datetime.strftime(cweek_to_date(c), '%Y-%m-%d') for c in range(2495, 2595) }
+      mapping = { c: datetime.strftime(cweek_to_date(c), '%Y-%m-%d') for c in range(2495, 2600) }
     else:
       raise Exception()
 

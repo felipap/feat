@@ -38,8 +38,6 @@ for pack in ALL_PACKS:
     raise Exception(f'Duplicated FUNCTIONS {duplicated}')
   FUNCTIONS.update(pack)
 
-print("Registered functions", FUNCTIONS.keys())
-
 def getFunction(name: str):
   """
   Get a function of `name`.
