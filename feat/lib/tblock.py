@@ -22,20 +22,27 @@ def cweek_to_date(cweek):
   first_sunday = datetime(1970, 1, 4)
   return first_sunday + relativedelta(days=7*cweek)
 
+
+def get_next_week_beginning(date, starts_on='sunday'):
+  if starts_on == 'sunday':
+    if date.weekday() != 6:
+      # Calculate closest following sunday.
+      return date + timedelta(6 - date.weekday())
+      # assert start.weekday() == 0, "This should be a Sunday!"
+    date = date.replace(hour=0, minute=0, second=0, microsecond=0)
+    return date
+  else:
+    print('Start on Sundays to match the logic of Moment.js.')
+    raise NotImplementedError()
+
 def make_week_starts(start, end, starts_on='sunday'):
   """
   """
   if start >= end:
     raise Exception()
   
-  if starts_on == 'sunday':
-    if start.weekday() != 6:
-      # Calculate closest following sunday.
-      start = start + timedelta(6 - start.weekday())
-      # assert start.weekday() == 0, "This should be a Sunday!"
-  else:
-    print('Start on Sundays to match th elogic of Moment.js.')
-    raise NotImplementedError()
+  start = get_next_week_beginning(start, starts_on)
+  print("starts on", start)
 
   weeks = []
   curr = start

@@ -272,6 +272,30 @@ register_function('ACC', call_accumulate, num_args=1, takes_pivots=False)
 
 #
 
+def call_rank(ctx, name, args):
+  child = args[0]
+
+  frame = child.get_stripped()
+  
+  # FIXME this is not right. we are assuming that negative values should not
+  # be considered towards finding the quantiles.
+  frame.loc[frame[child.name] < 0, child.name] = np.nan
+
+  if '__date__' in child.get_pivots():
+    for date_value in frame['__date__'].unique():
+      frame.loc[frame['__date__'] == date_value, name] = \
+        frame[frame['__date__'] == date_value][child.name].rank(pct=True, method='average')
+  else:
+    frame[name] = frame[child.name].rank(pct=True, method='average')
+  
+  result = ctx.table.create_subframe(name, child.pivots)
+  result.fill_data(frame, child.fillnan)
+  return result
+
+register_function('RANK', call_rank, num_args=1, takes_pivots=False)
+
+#
+
 # TODO: document
 def call_tsinceseen(ctx, name, args, pivots):
   child = args[0]

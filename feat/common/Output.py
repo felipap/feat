@@ -108,7 +108,7 @@ class Output(Table):
     
     pointers = {}
     for column, value in output_config.items():
-      if type(value) in [list, tuple]:
+      if type(value) in [list, tuple]: # Must be a date field.
         if date_field:
           raise Exception('Found more than one date field.')
         print(f'Taking {column} to be the date field ({value})')
@@ -116,7 +116,7 @@ class Output(Table):
         date_range = value
       else:
         pointers[column] = value
-    
+        
     if not date_range:
       raise Exception("No date field specified.")
     
@@ -213,9 +213,13 @@ class Output(Table):
 
     # Translate cmonth values to datetimes.
     if self.get_block_type() == 'month':
-      mapping = { c: date_yearmonth(cmonth_to_date(c)) for c in range(570, 650) }
+      min_month = final['__date__'].min()
+      max_month = final['__date__'].max()
+      mapping = { c: date_yearmonth(cmonth_to_date(c)) for c in range(min_month, max_month+1) }
     elif self.get_block_type() == 'week':
-      mapping = { c: datetime.strftime(cweek_to_date(c), '%Y-%m-%d') for c in range(2495, 2600) }
+      min_week = final['__date__'].min()
+      max_week = final['__date__'].max()
+      mapping = { c: datetime.strftime(cweek_to_date(c), '%Y-%m-%d') for c in range(min_week, max_week+1) }
     else:
       raise Exception()
 

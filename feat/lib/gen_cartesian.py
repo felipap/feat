@@ -2,8 +2,13 @@
 import pandas as pd
 
 def gen_cartesian(colUniqueVals):
-  """Generate cartesian product of the columns in colUniqueVals.
-  Uses https://stackoverflow.com/questions/13269890."""
+  """
+  Generate cartesian product of the columns in colUniqueVals.
+  Uses https://stackoverflow.com/questions/13269890.
+
+  Example:
+  
+  """
 
   df = pd.DataFrame().assign(key=1)
   for key, values in colUniqueVals.items():

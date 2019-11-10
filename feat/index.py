@@ -6,7 +6,13 @@ from .assembler import assemble_many
 from .parser import parse_features
 
 
-def assemble(features, dataframes, table_configs, output_config, block_type='month'):
+def assemble(
+  features,
+  dataframes,
+  table_configs,
+  output_config,
+  block_type='month',
+):
   """
   Use the input dataframes and configurations to create the tables and
   initialize the data graph.
