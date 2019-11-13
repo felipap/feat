@@ -30,6 +30,11 @@ def assemble(
     table = create_table_from_config(table_name, table_config, dataframes.pop(table_name), block_type)
     graph.add_table(table)
 
+  # import ptvsd
+  # ptvsd.enable_attach(address=('localhost', 5678), redirect_output=True)
+  # ptvsd.wait_for_attach()
+  # breakpoint()
+
   # Create the output object and wrap up the graph.
   output = Output(graph.tables, output_config, block_type)
   graph.add_output(output)

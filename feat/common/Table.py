@@ -69,6 +69,29 @@ class Table(object):
       raise Exception()
     return list(self._dataframe[field].unique())
 
+  def get_unique_date_and_field_rows(self, field):
+    """
+    Return unique combinations of ([field], [date_key]) present in the
+    dataframe.
+    """
+    
+    if not self.date_key:
+      raise Exception('only valid for tables with date_key')
+    if not field in self._dataframe.columns:
+      raise Exception()
+
+    unique_frame = self._dataframe.drop_duplicates([field,'__date__'])[[field,'__date__']]
+    # Must convert from numpy.record to tuples manually.
+    return list(map(tuple, unique_frame.to_records(index=False)))
+
+    # unique_date_per_field = {}
+    # for record in unique_frame.to_dict('records'):
+    #   field_value = record[field]
+    #   if not field_value in unique_date_per_field:
+    #     unique_date_per_field[field_value] = []
+    #   unique_date_per_field[field_value].append(record['__date__'])
+    # return unique_date_per_field
+
   def get_keys(self):
     if self.date_key:
       return [self.date_key, *self._keys]

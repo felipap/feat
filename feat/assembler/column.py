@@ -86,7 +86,7 @@ def fetch_existing_subframe(ctx, name):
 
 @assemble_column_log_errors
 @assert_returns_frame
-def assemble_column(ctx, tree):  
+def assemble_column(ctx, tree):
   # If column was already generated, stop.
   if ctx.table.has_column(tree.get_name()):
     return fetch_existing_subframe(ctx, tree.get_name())

@@ -5,6 +5,7 @@ from . import nested
 from . import compare
 from . import future
 from . import stats
+from . import people
 from . import formatter
 from . import datetime
 
@@ -15,6 +16,7 @@ ALL_PACKS = [
   compare.functions,
   future.functions,
   stats.functions,
+  people.functions,
   formatter.functions,
   datetime.functions,
 ]

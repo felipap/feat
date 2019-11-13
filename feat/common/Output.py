@@ -39,7 +39,9 @@ def caseword(word):
   return word[0].upper()+word[1:]
 
 def make_date_counts(date_range, block_type):
-  """Inclusive range."""
+  """
+  Inclusive range.
+  """
 
   start = datetime.strptime(date_range[0], '%Y-%m-%d')
   end = datetime.strptime(date_range[1], '%Y-%m-%d')
@@ -55,8 +57,9 @@ def make_date_counts(date_range, block_type):
     week_starts = make_week_starts(start, end)
     return list(map(date_to_cweek, week_starts))
 
-RE_POINTER = re.compile(r'^\w+\.\w+$')
 
+
+RE_POINTER = re.compile(r'^\w+\.\w+$')
 
 def _validate_final_dataframe(assembled):
   # Alert of NaN values being returned.
@@ -74,6 +77,9 @@ def _validate_final_dataframe(assembled):
   # Assert no duplicate features (which might break things later)
   if sorted(list(set(assembled.columns))) != sorted(assembled.columns):
     raise Exception("Duplicate features found.")
+
+
+
 
 class Output(Table):
   """
@@ -120,50 +126,51 @@ class Output(Table):
     if not date_range:
       raise Exception("No date field specified.")
     
-    print("pointers", pointers, date_field, date_range)
+    print("pointers", pointers, date_field, date_range, block_type)
     assert date_field
-    
-    date_counts = make_date_counts(date_range, block_type)
-    
-    # Record each unique value of the tables that the output points to (eg.
-    # for each product id), so we can scaffold an output dataframe.
-
-    unique_values = {}
-    for in_pointer in pointers.values():
-      if not RE_POINTER.match(in_pointer):
-        raise Exception(f'Unexpected pointer format of {in_pointer}')
-      
-      table_name, field = in_pointer.split('.')
-      if table_name not in tables:
-        raise Exception('Unrecognized table {table_name}.')
-      table = tables[table_name]
         
-      """
-      if 'restrict_ids_to' in config and field in config['restrict_ids_to']:
-        t, f = config['restrict_ids_to'][field].split('.') # eg: Sales.location
-      # possible = set(df[keyIn].unique()) & set(dataframes[t][f].unique())
-      uniques[field.lower()] = list(set(dataframes[t][f].unique()))
-      """
+    """
+    The scaffold is the basic frame containing the exact combination of keys for
+    which we will be assembling features. If we are simply assembling features
+    for customers over time, the scaffold will be a two-column frame with
+    every combination of customer id and date block (eg. weeks) for which we
+    will generate features (eg. number of purchases that week).
 
-      uniques = table.get_unique_values(field)
-      unique_values[table_name] = uniques
+    [Customer Ids] [Date block]
+    1               2018-10-04 
+    1               2018-10-11 
+    1               2018-10-18 
+    1               2018-10-25 
+    2               2018-10-18 
+    2               2018-10-25 
 
-      print(f'Unique values for {table_name}.{field}: ({len(uniques)} items)')
+    A no-brainer strategy would be to have in the scaffold one row per cartesian
+    product of set(...all date blocks) times the set(...all customer ids).
+    As a downside, we will generate rows for when a customer didn't even exist,
+    which we want to avoid. (Lest we have to scrape them off "manually"
+    afterwards). This is only a concern because customers are a "live" table,
+    containing snapshots over time. If the keys were data blocks and product
+    ids (which, suppose, are static objects over time), then the cartesian
+    product approach would work just fine.
 
-    unique_values[date_field] = date_counts
+    A perfect strategy would be to check for every "live" table, for which dates
+    each of their objects existed. Then, for each combination of tables ids,
+    get rid of dates for which at least of the live objects didn't exist. (Hope
+    you got that.)
+    """
 
-    # print("Using date range", dates, unique_values[date_field], len(dates))
+    # NOTE implementing the first strategy is a bit complicated. For now we made
+    # it work for outputs of a single "live" table.
+    if len(pointers) > 1:
+      raise NotImplementedError('Product algorithm not implemented yet.')
+    
+    # dataframe = self.generate_scaffold_NO_BRAINER(pointers, tables,
+    #   date_field, desired_date_counts, block_type)
 
-    sizes = map(len, unique_values.values())
-    output_size = reduce(lambda x, y: x*y, sizes)
+    desired_date_counts = make_date_counts(date_range, block_type)
 
-    # print("Generating output of size", output_size)
-    assert output_size < 50*1000*1000, "Output is too big!"
-
-    product = gen_product(unique_values.values())
-
-    dataframe = pd.DataFrame(product)
-    dataframe.columns = list(unique_values.keys())
+    dataframe = self.generate_scaffold_ONE_LIVE_TABLE(pointers, tables,
+      date_field, desired_date_counts, block_type)
 
     # Output.sort_values([config['date_block'],'location','product'], inplace=True)
 
@@ -193,6 +200,82 @@ class Output(Table):
       pointers,
       self._date_field,
     )
+  
+
+  def generate_scaffold_ONE_LIVE_TABLE(self, pointers, tables, date_field,
+  desired_date_counts, block_type):
+    """
+    """
+
+    # Remember, assuming a single pointer.
+    in_pointer = list(pointers.values())[0]
+
+    if not RE_POINTER.match(in_pointer):
+      raise Exception(f'Unexpected pointer format of {in_pointer}')
+    
+    table_name, field = in_pointer.split('.')
+    if table_name not in tables:
+      raise Exception('Unrecognized table {table_name}.')
+    table = tables[table_name]
+
+    date_and_fields = table.get_unique_date_and_field_rows(field)
+    for row in date_and_fields:
+      assert row[0] and row[1] # Dates and field valus should all eval to true.
+
+    output_size = len(date_and_fields)
+    # print("Generating output of size", output_size)
+    assert output_size < 50*1000*1000, "Output is too big!"
+
+    dataframe = pd.DataFrame(date_and_fields, columns=[table_name, date_field])
+
+    # Select in dataframe only those dates that we want to scaffold with.
+    dataframe = dataframe[dataframe[date_field].isin(desired_date_counts)]
+    
+    return dataframe
+
+
+  def generate_scaffold_NO_BRAINER(self, pointers, tables, date_field,
+  desired_date_counts, block_type):
+    """
+    This is the no-brainer implementation.
+    Record each unique value of the tables that the output points to (eg.
+    for each product id), so we can scaffold an output dataframe.
+    """
+
+    unique_values = {}
+    for in_pointer in pointers.values():
+      if not RE_POINTER.match(in_pointer):
+        raise Exception(f'Unexpected pointer format of {in_pointer}')
+      
+      table_name, field = in_pointer.split('.')
+      if table_name not in tables:
+        raise Exception('Unrecognized table {table_name}.')
+      table = tables[table_name]
+        
+      # if 'restrict_ids_to' in config and field in config['restrict_ids_to']:
+      #   t, f = config['restrict_ids_to'][field].split('.') # eg: Sales.location
+      # # possible = set(df[keyIn].unique()) & set(dataframes[t][f].unique())
+      # uniques[field.lower()] = list(set(dataframes[t][f].unique()))
+
+      uniques = table.get_unique_values(field)
+      unique_values[table_name] = uniques
+
+      print(f'Unique values for {table_name}.{field}: ({len(uniques)} items)')
+
+    unique_values[date_field] = desired_date_counts
+
+    # print("Using date range", dates, unique_values[date_field], len(dates))
+
+    sizes = map(len, unique_values.values())
+    output_size = reduce(lambda x, y: x*y, sizes)
+
+    # print("Generating output of size", output_size)
+    assert output_size < 50*1000*1000, "Output is too big!"
+
+    product = gen_product(unique_values.values())
+    dataframe = pd.DataFrame(product)
+    dataframe.columns = list(unique_values.keys())
+    return dataframe
   
 
   def get_block_type(self):

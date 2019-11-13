@@ -49,33 +49,7 @@ type_config = {
 shape = {
     'date_range': ['2017-11', '2019-5'],
     'features': [
-      "customer.flex_status",
-    # "GREATERTHAN(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),0)",
-
-    # #"ACC(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(total_price|order.customer,CMONTH(order.date)))",
-
-    # "MINUSPREV(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer))",
-    # "JSON_GET(customer.shipping_address,\"['state']\")",
-    # "customer.school_delivery",
-    # "JSON_GET(customer.flex_plans,\"['items'][0]['id']\")",
-    # "TIME_SINCE(CMONTH(Users{customer=id}.created))",
-    
-    # #"EMAIL_DOMAIN(customer.email)",
-    # "DOMAIN_EXT(EMAIL_DOMAIN(customer.email))",
-            
-    # #Previously acc-ed !!! For some reason without FWD is being hard to train1
-    # "ACC(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|order.customer,CMONTH(order.date)))",
-    # "FWD(ACC(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|order.customer,CMONTH(order.date))),1)",
-    
-    # #Order sums (this and prev months)
-    # "Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer)",
-    # "FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),1)",
-    # "FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),2)",
-    # "FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.SUM(quantity|CMONTH(order.date),order.customer),3)",
-    
-    # #Dcount since last order (prev months)
-    # "Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.TSINCESEEN(CMONTH(order.date),CMONTH(order.date)|order.customer,CMONTH(order.date))",
-    # ##"FWD(Order_items{CMONTH(date)=CMONTH(order.date);customer=order.customer}.TSINCESEEN(CMONTH(order.date),CMONTH(order.date)|order.customer,CMONTH(order.date)),1)",
+      "customer.subscription_status",
     ],
     "output": {
       'date_block': 'CMONTH(date)',
