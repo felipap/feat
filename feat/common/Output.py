@@ -11,29 +11,6 @@ from .Table import Table
 from ..lib.tblock import date_to_cmonth, cmonth_to_date, date_yearmonth,\
   date_to_cweek, cweek_to_date, make_week_starts
 
-def gen_product(sets):
-  """
-  Generate the cartesian product of a list of sets (with element sorted by
-  the order that their sets were provided, of course).
-  """
-
-  # TODO one of the Kaggle solutions is smarter than just doing a complete product
-  # for date in get_month_count(start, end):
-  #   _sales = train[train.month_block==date]
-  #   m2.append(np.array(list(product([date], _sales.shop.unique(), _sales.item.unique())), dtype='int16'))
-
-  # def gen_cartesian(colUniqueVals):
-  #   """Generate cartesian product of the columns in colUniqueVals.
-  #   Uses https://stackoverflow.com/questions/13269890."""
-  #   df = pd.DataFrame().assign(key=1)
-  #   for key, values in colUniqueVals.items():
-  #     this = pd.DataFrame({ key: values })
-  #     df = pd.merge(df, this.assign(key=1), on='key', how='outer')
-  #   df.drop('key', axis=1, inplace=True)
-  #   return df
-
-  return list(itertools.product(*sets))
-
 # TODO DELETE
 def caseword(word):
   return word[0].upper()+word[1:]
@@ -79,6 +56,28 @@ def _validate_final_dataframe(assembled):
     raise Exception("Duplicate features found.")
 
 
+def _is_valid_date_range(date_range):
+  if not isinstance(date_range, list):
+    return False
+  if len(date_range) != 2:
+    return False
+  try:
+    date1 = datetime.strptime(date_range[0], '%Y-%m-%d')
+    date2 = datetime.strptime(date_range[1], '%Y-%m-%d')
+  except ValueError:
+    return False
+
+  if date1.weekday() != 6:
+    print('date1', date_range, date1.weekday())
+    return False
+  if date2.weekday() != 6:
+    print('date2')
+    return False
+  if date1 >= date2:
+    print('the same')
+    return False
+  return True
+
 
 
 class Output(Table):
@@ -104,7 +103,7 @@ class Output(Table):
       tables: dictionary of Table, indexed by their names.
       output_config: {
         'customer': 'customer.id',
-        'date': ("2017-11-01", "2019-9-14"),
+        'date': ("2017-11-05", "2019-9-14"),
       }
       block_type: 'week' | 'month'
     """
@@ -120,6 +119,9 @@ class Output(Table):
         print(f'Taking {column} to be the date field ({value})')
         date_field = column
         date_range = value
+
+        if not _is_valid_date_range(date_range):
+          raise Exception('Invalid date range')
       else:
         pointers[column] = value
         
@@ -163,7 +165,7 @@ class Output(Table):
     # it work for outputs of a single "live" table.
     if len(pointers) > 1:
       raise NotImplementedError('Product algorithm not implemented yet.')
-    
+
     # dataframe = self.generate_scaffold_NO_BRAINER(pointers, tables,
     #   date_field, desired_date_counts, block_type)
 
@@ -230,6 +232,14 @@ class Output(Table):
 
     # Select in dataframe only those dates that we want to scaffold with.
     dataframe = dataframe[dataframe[date_field].isin(desired_date_counts)]
+
+    for date_count in desired_date_counts:
+      if dataframe[dataframe[date_field]==date_count].shape[0] == 0:
+        print(f'WARNING: wanted date count {date_count} but none exists in scaffold.')
+        # TODO improve this error handling. Perhaps be more proactive about
+        # checking whether user snapshots go up to the highest date_counts.
+        if date_count == max(desired_date_counts):
+          print('This is probably because you didn\'t pass in data with snapshots up to the date you want.')
     
     return dataframe
 
@@ -272,7 +282,29 @@ class Output(Table):
     # print("Generating output of size", output_size)
     assert output_size < 50*1000*1000, "Output is too big!"
 
-    product = gen_product(unique_values.values())
+
+    """
+    Generate the cartesian product of a list of sets (with element sorted by
+    the order that their sets were provided, of course).
+    """
+
+    # TODO one of the Kaggle solutions is smarter than just doing a complete product
+    # for date in get_month_count(start, end):
+    #   _sales = train[train.month_block==date]
+    #   m2.append(np.array(list(product([date], _sales.shop.unique(), _sales.item.unique())), dtype='int16'))
+
+    # def gen_cartesian(colUniqueVals):
+    #   """Generate cartesian product of the columns in colUniqueVals.
+    #   Uses https://stackoverflow.com/questions/13269890."""
+    #   df = pd.DataFrame().assign(key=1)
+    #   for key, values in colUniqueVals.items():
+    #     this = pd.DataFrame({ key: values })
+    #     df = pd.merge(df, this.assign(key=1), on='key', how='outer')
+    #   df.drop('key', axis=1, inplace=True)
+    #   return df
+
+    product = list(itertools.product(*unique_values.values()))
+
     dataframe = pd.DataFrame(product)
     dataframe.columns = list(unique_values.keys())
     return dataframe

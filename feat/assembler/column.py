@@ -87,6 +87,12 @@ def fetch_existing_subframe(ctx, name):
 @assemble_column_log_errors
 @assert_returns_frame
 def assemble_column(ctx, tree):
+
+  # import ptvsd
+  # ptvsd.enable_attach(address=('localhost', 5678), redirect_output=True)
+  # ptvsd.wait_for_attach()
+  # breakpoint()
+
   # If column was already generated, stop.
   if ctx.table.has_column(tree.get_name()):
     return fetch_existing_subframe(ctx, tree.get_name())

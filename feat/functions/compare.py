@@ -4,13 +4,10 @@ Functions related to comparing.
 
 import numpy as np
 import pandas as pd
-# from numba import njit
 
 from .lib.per_value import per_value
 from .lib.per_group import make_per_group
 
-# https://stackoverflow.com/a/52674448/396050
-# @njit
 def call_greaterthan(value, args):
   return value > args[1]
 

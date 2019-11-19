@@ -20,7 +20,7 @@ def test_date():
    print(date_to_cweek(date))
 
 def test_count():
-  # counts = make_date_counts(['2017-11-01', '2019-01-01'], 'week')
+  # counts = make_date_counts(['2017-11-05', '2019-01-01'], 'week')
   # start = datetime.strptime('2019-07-20', '%Y-%m-%d')
   # end = datetime.strptime('2019-08-05', '%Y-%m-%d')
 
