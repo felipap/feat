@@ -176,21 +176,8 @@ class Output(Table):
 
     # Output.sort_values([config['date_block'],'location','product'], inplace=True)
 
-    # Aggregate train set by shop/item pairs to calculate target
-    # aggreagates, then <b>clip(0,20)</b> target value. This way train
-    # target will be similar to the test predictions.
-
     # felipap: add item_ctn_month column to 'Output'
     # Output = pd.merge(Output, group, on=cols, how='left')
-    # Output['item_cnt_month'] = (Output['item_cnt_month']
-    #                                 .fillna(0)
-    #                                 .clip(0,20) # NB clip target here
-    #                                 .astype(np.float16))
-
-    # I use floats instead of ints for item_cnt_month to avoid
-    # downcasting it after concatination with the test set later. If
-    # It would be int16, after concatination with NaN values it becomes
-    # int64, but foat16 becomes float16 even with NaNs.
 
     self._block_type = block_type
     self._date_field = date_field
@@ -288,11 +275,6 @@ class Output(Table):
     the order that their sets were provided, of course).
     """
 
-    # TODO one of the Kaggle solutions is smarter than just doing a complete product
-    # for date in get_month_count(start, end):
-    #   _sales = train[train.month_block==date]
-    #   m2.append(np.array(list(product([date], _sales.shop.unique(), _sales.item.unique())), dtype='int16'))
-
     # def gen_cartesian(colUniqueVals):
     #   """Generate cartesian product of the columns in colUniqueVals.
     #   Uses https://stackoverflow.com/questions/13269890."""
@@ -346,6 +328,4 @@ class Output(Table):
     _validate_final_dataframe(final)
 
     return final
-
-
 

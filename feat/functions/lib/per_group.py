@@ -10,6 +10,8 @@ from timeit import default_timer as timer
 SPLIT = 0
 BE_THOROUGH = True
 
+# TODO validate the functions regarding the arguments they take
+# https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/framework/function.py#L130
 
 def _process_chunk(chunk):
   """
@@ -35,9 +37,6 @@ def _process_chunk(chunk):
       results = function(datetovalue)
     else:
       results = function(datetovalue, args)
-
-    if keys['customer'] == '5d430b531a55d200152297fb':
-      print("OPS")
 
     ret = []
     for (tcount, row) in datetovalue.items():

@@ -12,6 +12,8 @@ TIME_SINCE_SEEN(Order_item.SUM(quantity|DATE(order.date),order.customer))
 
 
 
+
+
 ```
 virtualenv venv -p python3.7
 ```
@@ -24,3 +26,8 @@ virtualenv venv -p python3.7
 ### FIX
 
 TIME_SINCE(Customer{customer=id}.created) works, but TIME_SINCE(customer.created) fails.
+
+
+### Good Python
+
+https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/framework
