@@ -149,6 +149,7 @@ class Frame(object):
     # parent.
     if need_translation:
       for pivot in need_translation.copy():
+        # TODO This behavior is either shaky or needs to be better documented.
         if pivot.startswith('DATE'):
           if parent == 'output':
             replace[pivot] = ctx.output.get_date_field()

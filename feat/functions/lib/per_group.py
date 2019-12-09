@@ -36,7 +36,7 @@ def _process_chunk(chunk):
     if args is None:
       results = function(datetovalue)
     else:
-      results = function(datetovalue, args)
+      results = function(datetovalue, *args)
 
     ret = []
     for (tcount, row) in datetovalue.items():

@@ -165,18 +165,29 @@ def parse_features(features: List[str]):
   Parse a list of strings into their respective Command objects.
   """
   
-  if len(set(features)) < len(features):
-    print("Duplicate features found:", len(set(features)), len(features))
+  # Throw if duplicate features are passed.
+  # We must remove the space from the features so equivalent features look
+  # identical.
+  stripped_features = list(map(lambda x: x.replace(' ', ''), features))
+  if len(set(stripped_features)) < len(stripped_features):
+    print("Duplicate features found:", len(set(stripped_features)), len(stripped_features))
     found = set()
-    for feature in features:
+    for feature in stripped_features:
       if feature in found:
         continue
-      if features.count(feature) > 1:
+      if stripped_features.count(feature) > 1:
         print("–", feature)
         found.add(feature)
     raise Exception()
   
   commands = []
-  for feature in features: # REVIEW no need to validate tree?
-    commands.append(parse_feature(feature))
+  for index, feature in enumerate(features): # REVIEW no need to validate tree?
+    if not feature.strip():
+      print('Cannot parse empty feature at index', index)
+
+    try:
+      commands.append(parse_feature(feature))
+    except Exception as e:
+      print("Failed to parse feature", feature)
+      raise e
   return commands

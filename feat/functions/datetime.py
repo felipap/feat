@@ -6,24 +6,42 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 from random import randrange
-from ..lib.tblock import date_to_cmonth, cmonth_to_date, date_to_cweek
+from ..lib.tblock import date_to_cmonth, cweek_to_date, date_to_cweek
 
 from .lib.per_col import make_per_col
 from .lib.per_value import per_value
 
 def call_dayoftheweek(column, _):
   def apply(value):
-    return datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ').isoweekday()
+    if type(value) == int:
+      # We should check if the block is week here
+      # if ctx['block_type'] == 'month':
+      date = cweek_to_date(value)
+    else:
+      date = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+    return date.isoweekday()
   return column.apply(apply)
 
 def call_dayofthemonth(column, _):
   def apply(value):
-    return (datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ').day)/4 + 10
+    if type(value) == int:
+      # We should check if the block is week here
+      # if ctx['block_type'] == 'month':
+      date = cweek_to_date(value)
+    else:
+      date = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+    return (date.day)/4 + 10
   return column.apply(apply)
 
 def call_monthoftheyear(column, _):
   def apply(value):
-    return datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ').month
+    if type(value) == int:
+      # We should check if the block is week here
+      # if ctx['block_type'] == 'month':
+      date = cweek_to_date(value)
+    else:
+      date = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+    return date.month
   return column.apply(apply)
 
 def call_date(ctx, value):

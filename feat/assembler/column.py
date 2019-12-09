@@ -42,7 +42,8 @@ def assemble_function(context, tree):
   args = assemble_args(context, tree)
 
   if fn['num_args'] != -1:
-    assert len(args) == fn['num_args']
+    if len(args) != fn['num_args']:
+      print(f'WARNING: num_args={fn["num_args"]} but len(args)={len(args)}')
   if fn.get('takes_pivots', False):
     pass # pivots are optional
   else:

@@ -8,6 +8,7 @@ from . import stats
 from . import people
 from . import formatter
 from . import datetime
+from . import math
 
 ALL_PACKS = [
   default.functions,
@@ -19,6 +20,7 @@ ALL_PACKS = [
   people.functions,
   formatter.functions,
   datetime.functions,
+  math.functions,
 ]
 
 def assert_valid_function(fn):

@@ -8,18 +8,26 @@ from ..lib.tblock import date_to_cmonth, cmonth_to_date
 
 from .lib.per_group import make_per_group
 
-def accumulate_foreach(rows):
+def accumulate_foreach(rows, window_size=None):
   """
   Accumulate _value_ across dates.
   """
 
+  if window_size is None:
+    window_size = 100000
+  
+  window = []
   result = {}
-  count = 0
+
   for date in sorted(rows.keys()):
     row = rows[date]
+    if len(window) == window_size:
+      window = window[1:]
     if row and pd.notna(row['_value_']):
-      count += row['_value_'] 
-    result[date] = count
+      window.append(row['_value_'])
+    else:
+      window.append(0)
+    result[date] = sum(window)
   return result
 
 def csince_foreach(rows):
@@ -90,7 +98,7 @@ def timesinceseen(rows):
   return result
 
 functions = {
-  'ACCUMULATE': make_per_group(accumulate_foreach),
+  'ACCUMULATE': make_per_group(accumulate_foreach, num_args=2),
   'TIME_SINCE': make_per_group(timesince),
   'TIME_SINCE_SEEN': make_per_group(timesinceseen, fillna=-999),
   'CSINCE': make_per_group(csince_foreach, fillna=-999),

@@ -71,7 +71,7 @@ def call_minusprev(ctx, name, args, pivots):
   df = child.get_stripped()
   df.rename(columns={ child.name: name }, inplace=True)
 
-  df = df[df['customer']=='5b69c4280998ba2b42deb32c']
+  # df = df[df['customer']=='5b69c4280998ba2b42deb32c']
   subtracted = df.copy()
   subtracted[time_col] += 1
 

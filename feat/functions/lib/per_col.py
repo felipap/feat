@@ -6,6 +6,7 @@ import multiprocessing
 import pandas as pd
 import numpy as np
 
+
 def make_per_col(innerfn, fillna=0, dtype=None, num_args=1):
   """Creates an assembler function from an Python function that takes a
   single Pandas column (plus any other arguments) as the input."""
@@ -15,7 +16,8 @@ def make_per_col(innerfn, fillna=0, dtype=None, num_args=1):
     child = args[0]
 
     df = child.get_stripped()
-    df.rename(columns={ child.name: '_value_' }, inplace=True)
+    # df.rename(columns={ child.name: '_value_' }, inplace=True)
+    df['_value_'] = df[child.name]
 
     print("THIS MIGHT BREAK SOMETHING")
     df = df[pd.notnull(df['_value_'])]

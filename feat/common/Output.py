@@ -39,12 +39,22 @@ def make_date_counts(date_range, block_type):
 RE_POINTER = re.compile(r'^\w+\.\w+$')
 
 def _validate_final_dataframe(assembled):
+  # Detect duplicate columns.
+  if len(set(assembled.columns)) < len(assembled.columns):
+    print(assembled.columns)
+    raise Exception("Final dataframe has duplicate columns.")
+  
   # Alert of NaN values being returned.
   for column in assembled.columns:
-    if assembled[column].isna().any():
+    if not isinstance(assembled[column], pd.Series):
+      # Code below expects assembled[column] to return a series instead of a
+      # dataframe (which happens eg. if multiple columns exist with that name).
+      raise Exception()
+    
+    if assembled[column].isnull().values.any():
       print("Column %s has NaN items " % column, assembled[column].unique())
 
-    if assembled[column].isna().any():
+    if assembled[column].isnull().values.any():
       print("Column %s has NaN items " % column, assembled[column].unique())
 
     # FIXME document this. Well wtf is this
@@ -111,6 +121,8 @@ class Output(Table):
     date_field = None
     date_range = None
     
+    # Parse the output_config and figure out the scaffold structure of the
+    # output dataframe.
     pointers = {}
     for column, value in output_config.items():
       if type(value) in [list, tuple]: # Must be a date field.
@@ -130,7 +142,7 @@ class Output(Table):
     
     print("pointers", pointers, date_field, date_range, block_type)
     assert date_field
-        
+
     """
     The scaffold is the basic frame containing the exact combination of keys for
     which we will be assembling features. If we are simply assembling features
@@ -148,23 +160,27 @@ class Output(Table):
 
     A no-brainer strategy would be to have in the scaffold one row per cartesian
     product of set(...all date blocks) times the set(...all customer ids).
-    As a downside, we will generate rows for when a customer didn't even exist,
-    which we want to avoid. (Lest we have to scrape them off "manually"
-    afterwards). This is only a concern because customers are a "live" table,
-    containing snapshots over time. If the keys were data blocks and product
-    ids (which, suppose, are static objects over time), then the cartesian
-    product approach would work just fine.
+    As a downside, we will likely generate rows for each customer didn't even
+    exist, which we want to avoid. (Lest we have to scrape them off "manually"
+    afterwards). This is only a concern because customers is a "live" table,
+    containing snapshots of customer data over time. If the scaffold keys were
+    data blocks and product ids (which, suppose, are static objects over time),
+    then the cartesian product approach would work just fine. In that case there
+    is no concept of product starting to exist, or time before a product
+    existed. (Which in itself is a generalization that might not 100% reflect
+    reality, because some products might have been created over time, instead of
+    all existing since the beginning of the business.)
 
     A perfect strategy would be to check for every "live" table, for which dates
-    each of their objects existed. Then, for each combination of tables ids,
-    get rid of dates for which at least of the live objects didn't exist. (Hope
-    you got that.)
+    each of their objects existed. Then, for each combination of these tables
+    keys, get rid of dates for which at least of the live objects didn't exist.
+    (Hope you got that.)
     """
 
-    # NOTE implementing the first strategy is a bit complicated. For now we made
-    # it work for outputs of a single "live" table.
+    # NOTE implementing the correct strategy is a bit complicated. For now we
+    # made it work for outputs of a single "live" table.
     if len(pointers) > 1:
-      raise NotImplementedError('Product algorithm not implemented yet.')
+      raise NotImplementedError('Correct product algorithm not implemented yet.')
 
     # dataframe = self.generate_scaffold_NO_BRAINER(pointers, tables,
     #   date_field, desired_date_counts, block_type)

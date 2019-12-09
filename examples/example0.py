@@ -38,18 +38,24 @@ TYPE_CONFIG = {
 }
 
 FEATURES = [
-  "ACCUMULATE(Order.SUM(JSON_GET(paid,\"['subtotal']\")|customer,DATE(date)))",
-  "RANK(TIME_SINCE(Customer{customer=id}.created))",
+  # "ACCUMULATE(Order_item.SUM(quantity|order.customer,DATE(order.date)),4)",
+  # "ACCUMULATE(Order_item.SUM(quantity|order.customer,DATE(order.date)))",
+  # "FUTURE_WITHIN(Order.COUNT(id|customer,DATE(date)),1)",
+  # "FUTURE_WITHIN(Order.COUNT(id|customer,DATE(date)),1)",
+  "FUTURE_WITHIN(Order.COUNT(id|customer,DATE(date)), 2)",
+  # "DT_DAY_OF_THE_MONTH(__date__)",
+  # "DT_MONTH_OF_THE_YEAR(__date__)",
+  # "RANK(TIME_SINCE(Customer{customer=id}.created))",
+  # "MATH_DIVIDE(ACCUMULATE(Order_item.SUM(quantity|order.customer,DATE(order.date))), TIME_SINCE(Customer{customer=id}.created_at))",
 ]
 
 async def main():
-  xxx = pickle.load(open('/Users/felipe/Desktop/dataframes.pickle', 'rb'))
-  dataframes = xxx['dataframes']
-  # type_configs = xxx['type_configs']
+  dataframes = pickle.load(open('/Users/felipe/Desktop/dataframes.pickle', 'rb'))
 
   import ptvsd
   ptvsd.enable_attach(address=('localhost', 5678), redirect_output=True)
   ptvsd.wait_for_attach()
+  # breakpoint()
 
   next_week = datetime.now() + timedelta(6 - datetime.now().weekday())
   
@@ -59,7 +65,7 @@ async def main():
     TYPE_CONFIG,
     dict(
       customer='customer.id',
-      __date__=['2017-11-01', '{:%Y-%m-%d}'.format(next_week)],
+      __date__=['2017-11-05', '{:%Y-%m-%d}'.format(next_week)],
     ),
     'week',
   )
