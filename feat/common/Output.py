@@ -15,6 +15,22 @@ from ..lib.tblock import date_to_cmonth, cmonth_to_date, date_yearmonth,\
 def caseword(word):
   return word[0].upper()+word[1:]
 
+def date_to_dcount(date, block_type):
+  if block_type == 'month':
+    return date_to_cmonth(date)
+  elif block_type == 'week':
+    return date_to_cweek(date)
+  else:
+    raise Exception()
+
+def dcount_to_date(dcount, block_type):
+  if block_type == 'month':
+    return cmonth_to_date(dcount)
+  elif block_type == 'week':
+    return cweek_to_date(dcount)
+  else:
+    raise Exception()
+
 def make_date_counts(date_range, block_type):
   """
   Inclusive range.
@@ -238,7 +254,7 @@ class Output(Table):
 
     for date_count in desired_date_counts:
       if dataframe[dataframe[date_field]==date_count].shape[0] == 0:
-        print(f'WARNING: wanted date count {date_count} but none exists in scaffold.')
+        print(f'WARNING: wanted date {dcount_to_date(date_count, block_type)} ({date_count}) but none exists in scaffold.')
         # TODO improve this error handling. Perhaps be more proactive about
         # checking whether user snapshots go up to the highest date_counts.
         if date_count == max(desired_date_counts):
@@ -248,7 +264,7 @@ class Output(Table):
 
 
   def generate_scaffold_NO_BRAINER(self, pointers, tables, date_field,
-  desired_date_counts, block_type):
+    desired_date_counts, block_type):
     """
     This is the no-brainer implementation.
     Record each unique value of the tables that the output points to (eg.

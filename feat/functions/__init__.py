@@ -8,6 +8,7 @@ from . import stats
 from . import people
 from . import formatter
 from . import datetime
+from . import round
 from . import math
 
 ALL_PACKS = [
@@ -20,6 +21,7 @@ ALL_PACKS = [
   people.functions,
   formatter.functions,
   datetime.functions,
+  round.functions,
   math.functions,
 ]
 

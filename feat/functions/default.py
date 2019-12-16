@@ -185,6 +185,8 @@ register_function('EXISTS', call_exists, num_args=1, takes_pivots=True)
 #
 
 def call_latest(ctx, name, args, pivots):
+  # Should we make sure date is one of the fields?
+  
   child = args[0]
   # FIXME: childResult should be used to generate the thing below, not ctx.df
   # and childName
@@ -318,8 +320,8 @@ def call_tsinceseen(ctx, name, args, pivots):
     # Use the pd.merge magic to combine the aggregated value into all rows
     # in df for years after date_count.
     df_leaf['__key__'] = 0
-    df_leaf.loc[df_leaf[time_col]>=date_count, '__key__'] = 123
-    maxed['__key__'] = 123
+    df_leaf.loc[df_leaf[time_col]>=date_count, '__key__'] = 123456
+    maxed['__key__'] = 123456
 
     other = pd.merge(df_leaf, \
       maxed, \
@@ -336,51 +338,3 @@ def call_tsinceseen(ctx, name, args, pivots):
 
 register_function('TSINCESEEN', call_tsinceseen, num_args=2, takes_pivots=True)
 
-
-# def call_groupby(ctx, name, args, pivots):
-#   child = args[0]
-#   time_col = args[1].name
-
-#   groupby = list(pivots)
-#   df[name] = df[time_col] - df[name]
-#   result = ctx.table.create_subframe(name, pivots)
-#   # Fill NaN values with big positive number.
-#   result.fill_data(df, fillnan=-99999)
-#   return result
-
-#   ##
-
-#   groupbyMinusTime = list(set(pivots)-{time_col})
-#   colUniqueVals = { pivot: ctx.df[pivot].unique() for pivot in pivots}
-#   df = gen_cartesian(colUniqueVals)
-
-#   df_leaf = df.copy()
-#   df[name] = np.NaN
-
-#   date_counts = sorted(ctx.get_date_range(), reverse=False)
-#   for date_count in date_counts:
-#     maxed = ctx.df[ctx.df[time_col]<=date_count].groupby(groupbyMinusTime).agg({ child.name: ['max'] })
-
-#     maxed.columns = [name] # Must come before reset_index.
-#     maxed.reset_index(inplace=True)
-
-#     # Use the pd.merge magic to combine the aggregated value into all rows
-#     # in df for years after date_count.
-#     df_leaf['__key__'] = 0
-#     df_leaf.loc[df_leaf[time_col]>=date_count, '__key__'] = 123
-#     maxed['__key__'] = 123
-
-#     other = pd.merge(df_leaf, \
-#       maxed, \
-#       on=[*groupbyMinusTime,'__key__'], \
-#       how='left', \
-#       suffixes=(False,False),)
-#     df.update(other)
-
-#   df[name] = df[time_col] - df[name]
-#   result = ctx.table.create_subframe(name, pivots)
-#   # Fill NaN values with big positive number.
-#   result.fill_data(df, fillnan=-99999)
-#   return result
-
-# register_function('GROUP', call_groupby, num_args=1, takes_pivots=True)

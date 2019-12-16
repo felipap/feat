@@ -22,7 +22,7 @@ def make_per_col(innerfn, fillna=0, dtype=None, num_args=1):
     print("THIS MIGHT BREAK SOMETHING")
     df = df[pd.notnull(df['_value_'])]
     
-    df[name] = innerfn(df['_value_'], args)
+    df[name] = innerfn(df['_value_'], *args[1:])
 
     if dtype:
       print("using dtype %s" % repr(dtype))

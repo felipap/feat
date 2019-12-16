@@ -13,8 +13,8 @@ def assemble(
   output_config,
   block_type='month',
 ):
-  import pickle
-  pickle.dump(dataframes, open('/Users/felipe/Desktop/dataframes.pickle', 'wb'))
+  # import pickle
+  # pickle.dump(dataframes, open('/Users/felipe/Desktop/dataframes.pickle', 'wb'))
 
   """
   Use the input dataframes and configurations to create the tables and

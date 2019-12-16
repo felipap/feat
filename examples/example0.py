@@ -8,7 +8,6 @@ from dateutil.relativedelta import relativedelta
 from datetime import datetime, timedelta
 
 import pandas as pd
-from timeit import default_timer as timer
 
 df_path = os.path.join(os.path.dirname(__file__), '..')
 sys.path.append(df_path)
@@ -38,15 +37,7 @@ TYPE_CONFIG = {
 }
 
 FEATURES = [
-  # "ACCUMULATE(Order_item.SUM(quantity|order.customer,DATE(order.date)),4)",
-  # "ACCUMULATE(Order_item.SUM(quantity|order.customer,DATE(order.date)))",
-  # "FUTURE_WITHIN(Order.COUNT(id|customer,DATE(date)),1)",
-  # "FUTURE_WITHIN(Order.COUNT(id|customer,DATE(date)),1)",
-  "FUTURE_WITHIN(Order.COUNT(id|customer,DATE(date)), 2)",
-  # "DT_DAY_OF_THE_MONTH(__date__)",
-  # "DT_MONTH_OF_THE_YEAR(__date__)",
-  # "RANK(TIME_SINCE(Customer{customer=id}.created))",
-  # "MATH_DIVIDE(ACCUMULATE(Order_item.SUM(quantity|order.customer,DATE(order.date))), TIME_SINCE(Customer{customer=id}.created_at))",
+  "FIRST(Order.LATEST(source|customer,DATE(date)))",
 ]
 
 async def main():

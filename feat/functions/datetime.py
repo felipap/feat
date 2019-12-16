@@ -11,7 +11,7 @@ from ..lib.tblock import date_to_cmonth, cweek_to_date, date_to_cweek
 from .lib.per_col import make_per_col
 from .lib.per_value import per_value
 
-def call_dayoftheweek(column, _):
+def call_dayoftheweek(column):
   def apply(value):
     if type(value) == int:
       # We should check if the block is week here
@@ -22,7 +22,7 @@ def call_dayoftheweek(column, _):
     return date.isoweekday()
   return column.apply(apply)
 
-def call_dayofthemonth(column, _):
+def call_dayofthemonth(column):
   def apply(value):
     if type(value) == int:
       # We should check if the block is week here
@@ -33,7 +33,7 @@ def call_dayofthemonth(column, _):
     return (date.day)/4 + 10
   return column.apply(apply)
 
-def call_monthoftheyear(column, _):
+def call_monthoftheyear(column):
   def apply(value):
     if type(value) == int:
       # We should check if the block is week here
