@@ -3,19 +3,7 @@ Functions related to number of occurences across time.
 """
 
 import pandas as pd
-from .lib.per_group import make_per_group
-
-def get_window_values(start, n, rows):
-  window = []
-  for index in range(start, start+n):
-    item = rows.get(index)
-    if not item:
-      window.append(None)
-    elif item['_value_'] and pd.notna(item['_value_']):
-      window.append(item['_value_'])
-    else:
-      window.append(None)
-  return window
+from .lib.per_group import make_per_group, get_window_values
 
 def until(rows):
   result = {}

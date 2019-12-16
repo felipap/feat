@@ -37,7 +37,8 @@ TYPE_CONFIG = {
 }
 
 FEATURES = [
-  "FIRST(Order.LATEST(source|customer,DATE(date)))",
+  "SHIFT(Order_item.SUM(quantity|DATE(order.date),order.customer),4)",
+  "SHIFT(WINDOW_SUM(Order_item.SUM(quantity|DATE(order.date),order.customer),4),4)",
 ]
 
 async def main():

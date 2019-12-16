@@ -14,7 +14,9 @@ def call_greaterthan(value, args):
 
 
 def call_changed(rows):
-  '''True when a value changes from yesterday to today.'''
+  """
+  True when a value changes from yesterday to today.
+  """
 
   result = {}
   last = 'ROFL ANDREWWWW' # A random thing.

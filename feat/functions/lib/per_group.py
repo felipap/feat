@@ -13,6 +13,26 @@ BE_THOROUGH = True
 # TODO validate the functions regarding the arguments they take
 # https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/framework/function.py#L130
 
+
+def get_window_values(end, n, rows):
+  """
+  Return the `n` consecutive values ending on index `end`.
+  """
+  
+  print("Vamos")
+  window = []
+  for index in range(end-n+1, end+1):
+    item = rows.get(index)
+    print(index, item, "porra")
+    if not item:
+      window.append(None)
+    elif pd.notna(item['_value_']):
+      window.append(item['_value_'])
+    else:
+      window.append(None)
+  return window
+
+
 def _process_chunk(chunk):
   """
   Run a user-defined function over the groups in a list. Groups meaning an array

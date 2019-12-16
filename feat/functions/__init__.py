@@ -7,6 +7,7 @@ from . import future
 from . import stats
 from . import people
 from . import formatter
+from . import window
 from . import datetime
 from . import round
 from . import math
@@ -20,6 +21,7 @@ ALL_PACKS = [
   stats.functions,
   people.functions,
   formatter.functions,
+  window.functions,
   datetime.functions,
   round.functions,
   math.functions,
