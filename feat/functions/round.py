@@ -1,5 +1,5 @@
 
-from jenks import jenks
+# from jenks import jenks
 from timeit import default_timer as timer
 
 from ..common.Frame import Frame

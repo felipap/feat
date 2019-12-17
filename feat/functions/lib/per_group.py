@@ -19,11 +19,9 @@ def get_window_values(end, n, rows):
   Return the `n` consecutive values ending on index `end`.
   """
   
-  print("Vamos")
   window = []
   for index in range(end-n+1, end+1):
     item = rows.get(index)
-    print(index, item, "porra")
     if not item:
       window.append(None)
     elif pd.notna(item['_value_']):

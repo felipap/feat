@@ -30,7 +30,7 @@ def call_dayofthemonth(column):
       date = cweek_to_date(value)
     else:
       date = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
-    return (date.day)/4 + 10
+    return date.day # /4 + 10
   return column.apply(apply)
 
 def call_monthoftheyear(column):

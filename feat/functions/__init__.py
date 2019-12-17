@@ -4,7 +4,7 @@ from . import counts
 from . import nested
 from . import compare
 from . import future
-from . import stats
+from . import trend
 from . import people
 from . import formatter
 from . import window
@@ -18,7 +18,7 @@ ALL_PACKS = [
   nested.functions,
   compare.functions,
   future.functions,
-  stats.functions,
+  trend.functions,
   people.functions,
   formatter.functions,
   window.functions,

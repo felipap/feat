@@ -1,6 +1,8 @@
 
+import pandas as pd
+import numpy as np
 from ..common.Frame import Frame
-
+from .lib.per_value import per_value
 
 def math_divide(ctx, name, args):
   # Args one and two must be (already generated) frames of the same table.
@@ -23,10 +25,18 @@ def math_divide(ctx, name, args):
   return result
 
 
+def call_equal(value, second):
+  return value == second
+
+def call_notnull(value):
+  return pd.notna(value)
+
 functions = {
   'MATH_DIVIDE': {
     'call': math_divide,
     'num_args': 2,
     'takes_pivots': False,
   },
+  'MATH_EQUAL': per_value(call_equal, fillna=False, dtype=np.bool, num_args=2),
+  'MATH_NOTNULL': per_value(call_notnull, fillna=False, dtype=np.bool, num_args=1),
 }

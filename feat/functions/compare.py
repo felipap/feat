@@ -33,7 +33,7 @@ def call_changed(rows):
 def call_first(rows):
   """
   Propagates the value of the first non-empty row. Beware that such value
-  (ie. rows[date]['_value']) might still be None itself, even though a further
+  (ie. rows[date]['_value_']) might still be None itself, even though a further
   non-empty value might exist. That's just how this function is programmed.
   """
 
@@ -48,8 +48,27 @@ def call_first(rows):
   return result
 
 
+def call_last(rows):
+  """
+  Propagates the value of the latest non-empty row. Beware that such value
+  (ie. rows[date]['_value_']) might still be None itself, even though a further
+  non-empty value might exist. That's just how this function is programmed.
+  """
+
+  last = None
+  result = {}
+  for date in sorted(rows.keys()):
+    if rows[date] and rows[date]['_value_']:
+      # and pd.notna(rows[date]['_value_']):
+      last = rows[date]['_value_']
+    result[date] = last
+  return result
+
+
+
 functions = {
   'GREATERTHAN': per_value(call_greaterthan, fillna=False, dtype=np.bool, num_args=2),
   'CP_CHANGED': make_per_group(call_changed, fillna=0),
   'FIRST': make_per_group(call_first),
+  'LAST': make_per_group(call_last),
 }
