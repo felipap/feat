@@ -12,6 +12,9 @@ def create_table_from_config(name, table_config, df, block_type):
   if table_config.get('date_key'):
     # TODO find a better place to make this transformation
     date_key = table_config.get('date_key')
+
+    if date_key not in df.columns:
+      raise Exception('datekey not in df columns')
     uniques = df[date_key].unique()
 
     if block_type == 'month':
@@ -37,7 +40,7 @@ class Table(object):
 
   def __init__(self, name, dataframe, keys, pointers, date_key=None):
     if dataframe.empty:
-      print(f'Dataframe for ${name} is empty. This might break things.')
+      print(f'Dataframe for {name} is empty. This might break things.')
 
     if not set(keys).issubset(dataframe.columns):
       raise Exception(f'Expected pivots {keys} for dataframe {name} but instead '
