@@ -49,7 +49,7 @@ shape = {
     'date_range': ['2017-11', '2019-5'],
     'features': [
       "customer.status",
-      "TIME_SINCE(CMONTH(Users{customer=id}.created))",
+      "TIME_SINCE(CMONTH(Users{customer=id}.created_at))",
     ],
     "output": {
       'date_block': 'CMONTH(date)',

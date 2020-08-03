@@ -128,7 +128,7 @@ def make_per_group(innerfn, num_args=1, fillna=0, dtype=None):
 
     start = timer()
     groups = _get_groups(df, keyminustime)
-    print("other one took: %ds" % (timer() - start))
+    # print("other one took: %ds" % (timer() - start))
 
     if SPLIT > 1:
       # Make innerfn application faster by splitting it into multiple chunks and
@@ -155,7 +155,7 @@ def make_per_group(innerfn, num_args=1, fillna=0, dtype=None):
     concatenated = list(np.hstack(results))
     final = pd.DataFrame(concatenated)
 
-    print("per_group took: %ds" % (timer() - start))
+    # print("per_group took: %ds" % (timer() - start))
     final.rename(columns={ '_tcount_': child.get_date_col(), '_result_': name }, inplace=True)
 
     if dtype:

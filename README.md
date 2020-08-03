@@ -25,7 +25,7 @@ virtualenv venv -p python3.7
 
 ### FIX
 
-TIME_SINCE(Customer{customer=id}.created) works, but TIME_SINCE(customer.created) fails.
+TIME_SINCE(Customer{customer=id}.created_at) works, but TIME_SINCE(customer.created_at) fails.
 
 
 ### Good Python

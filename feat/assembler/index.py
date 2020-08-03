@@ -35,7 +35,7 @@ def assemble_many(graph, output, trees):
     start = timer()
     result = assemble_column(context, tree)
     end = timer()
-    print("Feature took: %.2fs" % (end - start))
+    print("Total: %.2fs" % (end - start))
 
     validate_intermediary(output, tree, result)
   
