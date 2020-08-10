@@ -13,6 +13,7 @@ def assemble_column_log_errors(inner):
     try:
       result = inner(ctx, tree)
     except Exception as e:
+      # print(tree.get_json_dump())
       print("^ Error with", ctx.current, tree.get_name())
       raise e
     assert result.__class__.__name__ == 'Frame', result.__class__.__name__

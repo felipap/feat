@@ -42,7 +42,7 @@ def annotate_match(method):
       .replace(" ","")\
       .replace("\t","")
     result["name"] = name
-    # result["_last"] = method.__name__
+    result["_last"] = method.__name__
     return result
 
   return foo

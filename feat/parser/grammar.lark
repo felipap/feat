@@ -26,14 +26,15 @@ fn_arg:
 groupby: "|" this_column ("," this_column)*
 
 primitive:
+  | /[0-9]+/ -> number
   | SIGNED_NUMBER -> number
   | /[ubf]?r?("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i -> string
 //  | "`" /[^``]*/ "`" -> escaped
 //  | "[" [primitive ("," primitive)*] "]" -> array
 
-FUNCTION_NAME: /[A-Z_]+/
-TABLE_NAME: /[A-Z][a-z_]*/
-LOWERCASE: /[a-z_]+/
+FUNCTION_NAME: /[A-Z_][A-Z0-9_]+/
+TABLE_NAME: /[A-Z][a-z_0-9]*/
+LOWERCASE: /[a-z_][a-z_0-9]+/
 
 %import common.CNAME
 %import common.ESCAPED_STRING

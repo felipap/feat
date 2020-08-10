@@ -100,7 +100,7 @@ def assemble_column(ctx, tree):
 
   if tree.is_terminal():
     if not tree.is_function():
-      print("tree is", tree)
+      # print("tree is", tree.get_json_dump())
       raise Exception('Does this ever happen?')
       # assert tree['this'] in ctx.df.columns, "Terminal node isn't a " \
       # "function, so expected a string that belongs to the dataframe."

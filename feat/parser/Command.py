@@ -1,9 +1,14 @@
 
+import json
+
 # TODO rename.
 
 class Command(object):
   def __init__(self, tree):
     self._tree = tree
+
+  def get_json_dump(self):
+    return json.dumps(self._tree, indent=4)
 
   def get_name(self):
     return self._tree['name']

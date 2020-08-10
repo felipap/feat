@@ -41,8 +41,9 @@ class Frame(object):
   def get_date_col(self):
     if '__date__' in self.df.columns:
       return '__date__'
-    elif 'DATE(date)' in self.df.columns:
-      return 'DATE(date)'
+    elif 'DATE(created_at)' in self.df.columns:
+      return 'DATE(created_at)'
+    print(self.df.columns)
     raise Exception('WTF')
 
   
