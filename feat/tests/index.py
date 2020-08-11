@@ -37,7 +37,7 @@ type_config = {
   'product': {
     'pivots': ['id'],
   },
-  'order_item': {
+  'line_item': {
     'pivots': ['id'],
     'pointers': {
       'order': 'order.id',

@@ -28,7 +28,8 @@ def assemble(
   for table_name, table_config in table_configs.items():
     # Check that the dataframe for this table has been supplied.
     if not table_name in dataframes:
-      raise Exception(f'Dataframe for table {table_name} was not supplied.')
+      print(f'WARNING: Dataframe for table {table_name} was not supplied. Continuing.')
+      continue
 
     table = create_table_from_config(table_name, table_config, dataframes.pop(table_name), block_type)
     graph.add_table(table)

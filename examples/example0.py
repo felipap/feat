@@ -27,7 +27,7 @@ TYPE_CONFIG = {
       "customer": "customer.id",
     },
   },
-  "order_item": {
+  "line_item": {
     "key": "id",
     "pointers": {
       "order": "order.id",
