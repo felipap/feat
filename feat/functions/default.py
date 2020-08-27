@@ -231,6 +231,46 @@ register_function('COUNT', call_count, num_args=1, takes_pivots=True)
 
 #
 
+def call_count_where(ctx, name, args, pivots):
+  child = args[0]
+  value = args[1]
+
+  # FIXME: childResult should be used to generate the thing below, not ctx.df
+  # and childName
+  value = value.replace('"', '')
+  filtered = ctx.df[ctx.df[child.name] == value]
+  agg = filtered.groupby(pivots).agg({ child.name: ['count'] })
+  agg.columns = [name]
+  agg.reset_index(inplace=True)
+  agg[name] = agg[name].astype(np.int64) # REVIEW type cast
+  result = ctx.table.create_subframe(name, pivots)
+  result.fill_data(agg, fillnan=0)
+  return result
+
+register_function('COUNT_WHERE', call_count_where, num_args=1, takes_pivots=True)
+
+#
+
+def call_where(ctx, name, args):
+  breakpoint()
+  
+  child = args[0]
+  value = args[1]
+
+  value = value.replace('"', '')
+  
+  # FIXME: childResult should be used to generate the thing below, not ctx.df
+  # and childName
+  filtered = ctx.df[ctx.df[child.name]==value]
+  
+  result = ctx.table.create_subframe(name, list(child.pivots))
+  result.fill_data(filtered, fillnan=0)
+  return result
+
+register_function('WHERE', call_where, num_args=2, takes_pivots=False)
+
+#
+
 def call_accumulate(ctx, name, args):
   """
   ACC might be given a frame "sparse in dates", but it fills it up because

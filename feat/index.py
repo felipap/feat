@@ -14,7 +14,11 @@ def assemble(
   block_type='month',
 ):
   # import pickle
-  # pickle.dump(dataframes, open('/Users/felipe/Desktop/dataframes.pickle', 'wb'))
+  # pickle.dump(dataframes, open('/home/ubuntu/dataframes.pickle', 'wb'))
+
+  # print(table_configs)
+
+  # features = features[:20]
 
   """
   Use the input dataframes and configurations to create the tables and

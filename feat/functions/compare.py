@@ -48,6 +48,17 @@ def call_first(rows):
   return result
 
 
+def call_last_before(rows):
+  last = None
+  result = {}
+  for date in sorted(rows.keys()):
+    result[date] = last
+    if rows[date] and rows[date]['_value_']:
+      # and pd.notna(rows[date]['_value_']):
+      last = rows[date]['_value_']
+  return result
+
+
 def call_last(rows):
   """
   Propagates the value of the latest non-empty row. Beware that such value
@@ -71,4 +82,5 @@ functions = {
   'CP_CHANGED': make_per_group(call_changed, fillna=0),
   'FIRST': make_per_group(call_first),
   'LAST': make_per_group(call_last),
+  'LAST_BEFORE': make_per_group(call_last_before),
 }

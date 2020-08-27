@@ -101,5 +101,5 @@ functions = {
   'ACCUMULATE': make_per_group(accumulate_foreach, num_args=2),
   'TIME_SINCE': make_per_group(timesince),
   'TIME_SINCE_SEEN': make_per_group(timesinceseen, fillna=-999),
-  'CSINCE': make_per_group(csince_foreach, fillna=-999),
+  # 'CSINCE': make_per_group(csince_foreach, fillna=-999),
 }

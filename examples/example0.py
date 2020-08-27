@@ -17,36 +17,35 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', 50)
 
 TYPE_CONFIG = {
-  "customer": {
-    "key": "id",
-    "date_key": "__date__",
+  'customer': {
+    'key': 'id',
+    'pointers': None,
+    'date_key': '__date__'
   },
-  "order": {
-    "key": "id",
-    "pointers": {
-      "customer": "customer.id",
-    },
+  'order': {
+    'key': 'id',
+    'pointers': {
+    'customer_id': 'customer.id',
+    'customer': 'customer.id'
+    }
   },
-  "line_item": {
-    "key": "id",
-    "pointers": {
-      "order": "order.id",
-      "product": "product.id",
-    },
-  },
-  "product": {
-    "key": "id",
-  },
+  'line_item': {
+    'key': 'id',
+    'pointers': {
+    'order_id': 'order.id',
+    'order': 'order.id'
+    }
+  }
 }
 
 FEATURES = [
-  """SHIFT(WINDOW_FIRST(Order.LATEST(JSON_GET(refund,"[0]['status']")|customer,DATE(date)),4),5)""",
-  """WINDOW_COUNT_NOTNA(Order.LATEST(JSON_GET(refund,"[0]['status']")|customer,DATE(date)),4)""",
-  # "DT_DAY_OF_THE_MONTH(__date__)",
+  # """TIME_SINCE_SEEN(Order.COUNT(id|DATE(created_at),customer))""",
+  # """Order.WHERE(status,"cancelado")""",
+  """Order.COUNT_WHERE(status,"cancelado"|DATE(created_at),customer)""",
 ]
 
 async def main():
-  dataframes = pickle.load(open('/Users/felipe/Desktop/dataframes.pickle', 'rb'))
+  dataframes = pickle.load(open('/home/ubuntu/dataframes.pickle', 'rb'))
 
   import ptvsd
   ptvsd.enable_attach(address=('localhost', 5678), redirect_output=True)
