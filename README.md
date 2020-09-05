@@ -12,8 +12,6 @@ TIME_SINCE_SEEN(Line_item.SUM(quantity|DATE(order.date),order.customer))
 
 
 
-
-
 ```
 virtualenv venv -p python3.7
 ```

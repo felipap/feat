@@ -25,7 +25,7 @@ def create_table_from_config(name, table_config, df, block_type):
       raise Exception()
 
     df.replace(mapping, inplace=True)
-  
+
   # Validate the table configuration.
   keys = [table_config['key']]
   extended_keys = keys + (date_key and [date_key] or [])
@@ -40,17 +40,17 @@ class Table(object):
 
   def __init__(self, name, dataframe, keys, pointers, date_key=None):
     if dataframe.empty:
-      print(f'Dataframe for {name} is empty. This might break things.')
+      print(f'Dataframe for {name} is empty. This will probably break things, because we can\'t infer which columns are valid for his columns exist in this table!')
 
     if not set(keys).issubset(dataframe.columns):
       raise Exception(f'Expected pivots {keys} for dataframe {name} but instead '
           f'found columns {", ".join(dataframe.columns)}.')
-    
+
     extended_keys = keys + (date_key and [date_key] or [])
 
     if dataframe.duplicated(extended_keys).any():
       raise Exception(f'Table {name} has duplicate values for keys')
-    
+
     self._name = name
     self.date_key = date_key
     self._pointers = pointers
@@ -77,7 +77,7 @@ class Table(object):
     Return unique combinations of ([field], [date_key]) present in the
     dataframe.
     """
-    
+
     if not self.date_key:
       raise Exception('only valid for tables with date_key')
     if not field in self._dataframe.columns:
@@ -163,7 +163,7 @@ class Table(object):
       for pivot in frame.pivots:
         if pivot != right_on and not pivot in columns_overlap:
           raise Exception(f'Pivot {pivot} of {frame.name} not considered in merger')
-      
+
       right_on = '__JOIN__'
 
       outer_pivots = [left_on]
@@ -173,8 +173,8 @@ class Table(object):
         outer_pivots += [overlap]
         right_on = [right_on, overlap]
         left_on = [left_on, overlap]
-    
-      
+
+
       self._dataframe = pd.merge(self._dataframe, \
         copied_frame_df, \
         left_on=left_on, \
