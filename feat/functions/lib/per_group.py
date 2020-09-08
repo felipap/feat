@@ -18,7 +18,7 @@ def get_window_values(end, n, rows):
   """
   Return the `n` consecutive values ending on index `end`.
   """
-  
+
   window = []
   for index in range(end-n+1, end+1):
     item = rows.get(index)
@@ -38,7 +38,7 @@ def _process_chunk(chunk):
   must be passed as a single argument (eg. a dictionary), so that this function
   can be easily parallelized using multiprocessing.Pool.
   """
-  
+
   columns = chunk['columns']
   date_counts = chunk['date_counts']
   groups = chunk['groups']
@@ -80,7 +80,7 @@ def _get_groups(df, keyminustime):
   # is taking 80x what's taking this hard-coded alternative:
   # for keys, group in df.groupby(keyminustime):
   #   groups1.append(group.to_dict('records'))
-  
+
   groups = []
   records = df.sort_values(keyminustime).to_dict('records')
   # Loop records sorted by their key values. Use `last_key_values` and `this`
@@ -97,7 +97,7 @@ def _get_groups(df, keyminustime):
       last_key_values = this
   if accumulated:
     groups.append(accumulated)
-  
+
   return groups
 
 
@@ -106,7 +106,7 @@ def make_per_group(innerfn, num_args=1, fillna=0, dtype=None):
   Wraps around a function that takes as argument a *group*, that is, a set of
   rows with the same key(s).
   """
-  
+
   @wraps(innerfn)
   def magic(ctx, name, args, pivots=None):
     child = args[0]
@@ -123,8 +123,9 @@ def make_per_group(innerfn, num_args=1, fillna=0, dtype=None):
     # Make sure that the date values found in this dataframe are a subset of
     # the values from ctx.get_date_range().
     if not set(df[child.get_date_col()].unique()).issubset(date_counts):
-      print(set(df[child.get_date_col()].unique()) - set(date_counts))
+      # print(set(df[child.get_date_col()].unique()) - set(date_counts))
       # raise Exception()
+      pass
 
     start = timer()
     groups = _get_groups(df, keyminustime)
@@ -151,7 +152,7 @@ def make_per_group(innerfn, num_args=1, fillna=0, dtype=None):
       results = pool.map(_process_chunk, chunks)
     else:
       results = list(map(_process_chunk, chunks))
-    
+
     concatenated = list(np.hstack(results))
     final = pd.DataFrame(concatenated)
 
@@ -165,7 +166,7 @@ def make_per_group(innerfn, num_args=1, fillna=0, dtype=None):
     result = ctx.table.create_subframe(name, pivots)
     result.fill_data(final, fillnan=fillna)
     return result
-  
+
   return {
     'call': magic,
     'takes_pivots': True,

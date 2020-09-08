@@ -2,7 +2,7 @@
 from .common.Graph import Graph
 from .common.Table import create_table_from_config
 from .common.Output import Output
-from .assembler import assemble_many
+from .assembler import assemble_many, mock_many
 from .parser import parse_features
 
 
@@ -12,6 +12,7 @@ def assemble(
   table_configs,
   output_config,
   block_type='month',
+  __mock_result=False,
 ):
   # import pickle
   # pickle.dump(dataframes, open('/home/ubuntu/dataframes.pickle', 'wb'))
@@ -47,8 +48,11 @@ def assemble(
   command_trees = parse_features(features)
 
   # Assemble them.
-  assemble_many(graph, output, command_trees)
-  
+  if __mock_result:
+    mock_many(graph, output, command_trees)
+  else:
+    assemble_many(graph, output, command_trees)
+
   # Get their column names.
   col_names = list(map(lambda c: c.get_name(), command_trees))
 

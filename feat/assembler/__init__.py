@@ -1,3 +1,3 @@
 
 from .column import assemble_column
-from .index import assemble_many
+from .index import assemble_many, mock_many
