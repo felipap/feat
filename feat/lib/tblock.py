@@ -40,7 +40,7 @@ def make_week_starts(start, end, starts_on='sunday'):
   """
   if start >= end:
     raise Exception()
-  
+
   start = get_next_week_beginning(start, starts_on)
   print("starts on", start)
 
@@ -72,12 +72,12 @@ def yearmonth_date(ym):
 # def decode_cmonth(cmonth):
 #   base_date = datetime(1970,1,1)
 #   date = base_date + relativedelta(months=cmonth-1)
-#   return '%d-%02d' % (date.year, date.month) # TODO use 
+#   return '%d-%02d' % (date.year, date.month) # TODO use
 #   print("cmonth %s is %s" % (cmonth, '%d-%02d'))
 
 
 # TODO turn this into actual tests
 now = datetime.now()
 month_start = datetime(year=now.year, month=now.month, day=1)
-print(month_start, date_to_cmonth(month_start), cmonth_to_date(date_to_cmonth(month_start)))
+# print(month_start, date_to_cmonth(month_start), cmonth_to_date(date_to_cmonth(month_start)))
 assert cmonth_to_date(date_to_cmonth(month_start)) == month_start
