@@ -81,8 +81,12 @@ def _get_groups(df, keyminustime):
   # for keys, group in df.groupby(keyminustime):
   #   groups1.append(group.to_dict('records'))
 
+  if df.empty:
+    return []
+
   groups = []
   records = df.sort_values(keyminustime).to_dict('records')
+
   # Loop records sorted by their key values. Use `last_key_values` and `this`
   # to accumulate all the records with the same key values.
   last_key_values = tuple(records[0][col] for col in keyminustime)
@@ -112,6 +116,11 @@ def make_per_group(innerfn, num_args=1, fillna=0, dtype=None):
     child = args[0]
 
     df = child.get_stripped()
+    if df.empty:
+      result = ctx.table.create_subframe(name, pivots)
+      result.fill_empty(fillnan=fillna)
+      return result
+
     pivots = pivots or child.pivots
     # df = df[df['customer']=='5b69c4250998ba2b42de9de2']
 
@@ -154,6 +163,10 @@ def make_per_group(innerfn, num_args=1, fillna=0, dtype=None):
       results = list(map(_process_chunk, chunks))
 
     concatenated = list(np.hstack(results))
+
+    if not concatenated:
+      raise Exception('The following code is not ready to deal with empty dataframes.')
+
     final = pd.DataFrame(concatenated)
 
     # print("per_group took: %ds" % (timer() - start))

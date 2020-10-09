@@ -34,7 +34,7 @@ def call_shift(ctx, name, args, pivots):
   # If pivots isn't supplied, use child's pivots instead.
   if pivots is None:
     pivots = child.pivots
-  
+
   result = ctx.table.create_subframe(name, pivots)
   result.fill_data(shifted, child.fillnan)
   return result
@@ -59,7 +59,7 @@ register_function('GET', call_get, num_args=1, takes_pivots=True)
 def call_minusprev(ctx, name, args, pivots):
   child = args[0]
   time_col = child.get_date_col()
-  
+
   if pivots:
     raise NotImplementedError()
     # groupby = pivots
@@ -81,7 +81,7 @@ def call_minusprev(ctx, name, args, pivots):
   df.fillna(value={ name: 0 }, inplace=True)
 
   subtracted.fillna(value={ name: 0 }, inplace=True)
-  
+
   # Just using .subtract() will get rid of negative values, unless we
   # expand df to have all (consumer,cmonth) combinations in both df and
   # subtracted.
@@ -186,15 +186,19 @@ register_function('EXISTS', call_exists, num_args=1, takes_pivots=True)
 
 def call_latest(ctx, name, args, pivots):
   # Should we make sure date is one of the fields?
-  
+
   child = args[0]
   # FIXME: childResult should be used to generate the thing below, not ctx.df
   # and childName
-  agg = ctx.df.groupby(pivots).agg({ child.name: (lambda x: x.iloc[0]) })
-  agg.columns = [name]
-  agg.reset_index(inplace=True)
   result = ctx.table.create_subframe(name, pivots)
-  result.fill_data(agg, fillnan=0)
+
+  if ctx.df.empty:
+    result.fill_empty(fillnan=0)
+  else:
+    agg = ctx.df.groupby(pivots).agg({ child.name: (lambda x: x.iloc[0]) })
+    agg.columns = [name]
+    agg.reset_index(inplace=True)
+    result.fill_data(agg, fillnan=0)
   return result
 
 register_function('LATEST', call_latest, num_args=1, takes_pivots=True)
@@ -253,16 +257,16 @@ register_function('COUNT_WHERE', call_count_where, num_args=1, takes_pivots=True
 
 def call_where(ctx, name, args):
   breakpoint()
-  
+
   child = args[0]
   value = args[1]
 
   value = value.replace('"', '')
-  
+
   # FIXME: childResult should be used to generate the thing below, not ctx.df
   # and childName
   filtered = ctx.df[ctx.df[child.name]==value]
-  
+
   result = ctx.table.create_subframe(name, list(child.pivots))
   result.fill_data(filtered, fillnan=0)
   return result
@@ -318,7 +322,7 @@ def call_rank(ctx, name, args):
   child = args[0]
 
   frame = child.get_stripped()
-  
+
   # FIXME this is not right. we are assuming that negative values should not
   # be considered towards finding the quantiles.
   frame.loc[frame[child.name] < 0, child.name] = np.nan
@@ -329,7 +333,7 @@ def call_rank(ctx, name, args):
         frame[frame['__date__'] == date_value][child.name].rank(pct=True, method='average')
   else:
     frame[name] = frame[child.name].rank(pct=True, method='average')
-  
+
   result = ctx.table.create_subframe(name, child.pivots)
   result.fill_data(frame, child.fillnan)
   return result

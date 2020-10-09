@@ -37,7 +37,7 @@ class Frame(object):
   def get_pivots(self):
     return self.pivots
 
-  
+
   def get_date_col(self):
     if '__date__' in self.df.columns:
       return '__date__'
@@ -46,7 +46,7 @@ class Frame(object):
     print(self.df.columns)
     raise Exception('WTF')
 
-  
+
   def copy(self):
     frame = Frame(self.name, self.table, self.pivots)
     frame.fillnan = self.fillnan
@@ -55,29 +55,42 @@ class Frame(object):
     return frame
 
 
+  def fill_empty(self, fillnan=None, dtype=None):
+    """
+    Shorthand for callign fill_data with a dataframe with columns [name, *pivots].
+    """
+    df = pd.DataFrame(columns=[self.name, *(self.pivots or [])])
+    return self.fill_data(df, fillnan, dtype)
+
+
   def fill_data(self, df, fillnan=None, dtype=None):
     """
     Fill the current frame with the `df` dataframe. In `df` we expect to find
     one column for each pivot in this frame (ie. self.pivots) and one column
     for the main column in this frame (ie. self.name).
     """
-    
+
+    # TODO should we only allow it to be filled once?
+
     if self.df is not None:
       print("WARNING: You are refilling data, bro!")
-    
+
     # Check that the dataframe has all the right columns etc.
     assert isinstance(df, pd.DataFrame)
     for col in self.pivots:
-      assert col in df.columns, 'Pivot col \'%s\' not found in %s' % (col, df.columns)
+      if col not in df.columns:
+        print(self.pivots, df.columns)
+        raise Exception(f'Tried to fill frame {self.name} with a dataframe that lacks '
+          f'a groupby column we expected: {col}')
     assert self.name in df.columns, '%s not in %s' % (self.name, df.columns)
     if df[~df[self.name].isna()].shape[0] == 0:
-      print("WARNING: Empty dataset?")
+      print("WARNING: Empty dataset? " +self.name)
 
     self.fillnan = fillnan
     self.dtype = dtype
     # if df.drop_duplicates().shape[0] != df.shape[0]:
     #   print("WARNING: frame %s filled with duplicate data" % self)
-    
+
     # NOTE THIS IS NEW!!!!
     all_columns = list(set([*self.pivots, self.name]))
     self.df = drop_hashable_duplicates(df.copy()[all_columns])
@@ -108,7 +121,7 @@ class Frame(object):
       columns={ old: new },
       inplace=True
     )
-    
+
 
   def translate_pivots_root(self, ctx, parent, translation):
     """
@@ -117,17 +130,16 @@ class Frame(object):
         `current`)
 
     # TODO
-    # If a pivot in result is 'order.user' and if 'user' (ie. 'Users.id')
     # is a pivot of Output, we have to rename 'order.user' somehow to make it
     # work.
     """
- 
+
     need_translation = set(self.pivots) - set(ctx.df.columns)
     # NOTE this assumes that fields with the same name should be automatically
     # translated to each other.
     if not need_translation:
       return
- 
+
     # Try first with user-provided translation instructions (Table{a=b} syntax).
     replace = {}
     if translation:
@@ -157,11 +169,11 @@ class Frame(object):
             need_translation.remove(pivot)
           else:
             raise Exception('is date but dont know what to do')
-    
+
     # Next, give up.
     if need_translation:
       raise Exception(need_translation)
-    
+
     self.df.rename(columns=replace, inplace=True)
     self.pivots = { replace.get(e, e) for e in self.pivots }
 
@@ -173,11 +185,11 @@ class Frame(object):
       return None
     table_in, col_in = info
     print(parent, table_in, col_in)
-  
+
     pointers = ctx.graph.find_edge(tableOut=parent, tableIn=table_in, colIn=col_in)
     if not pointers:
       raise Exception('Failed to translate %s to table %s' % (column, parent))
-  
+
     # REVIEW: what are the cons of this??? what if we don't want to match
     # them>??? Does the col_in field have to be unique?
     if len(pointers) > 1:
@@ -185,9 +197,9 @@ class Frame(object):
       # Child.father -> Parent and Child.mother -> Parent.
       # We should offer some pattern matching.
       raise Exception('Multiple edges found to %s' % table_in)
-  
+
     # Rename pivot to col1 (ie. pointers[0][1])
-  
+
     translation = pointers[0][1]
     print("> Matching attribute found for {}: {}.{} points to {}.{}".format(column, *pointers[0]))
     return translation

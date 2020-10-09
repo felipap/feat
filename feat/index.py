@@ -14,20 +14,13 @@ def assemble(
   block_type='month',
   __mock_result=False,
 ):
-  # import pickle
-  # pickle.dump(dataframes, open('/home/ubuntu/dataframes.pickle', 'wb'))
-
-  # print(table_configs)
-
-  # features = features[:20]
-
   """
   Use the input dataframes and configurations to create the tables and
   initialize the data graph.
   """
 
   if block_type not in ['month', 'week']:
-    raise Exception()
+    raise Exception('Invalid block_type argument.')
 
   graph = Graph()
   for table_name, table_config in table_configs.items():

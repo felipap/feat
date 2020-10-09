@@ -29,7 +29,7 @@ TYPE_CONFIG = {
     'customer': 'customer.id'
     }
   },
-  'line_item': {
+  'lineitem': {
     'key': 'id',
     'pointers': {
     'order_id': 'order.id',
@@ -41,19 +41,53 @@ TYPE_CONFIG = {
 FEATURES = [
   # """TIME_SINCE_SEEN(Order.COUNT(id|DATE(created_at),customer))""",
   # """Order.WHERE(status,"cancelado")""",
-  """Order.COUNT_WHERE(status,"cancelado"|DATE(created_at),customer)""",
+  """LAST_BEFORE(Order.LATEST(status|customer,DATE(created_at)))""",
+  # """Order.COUNT_WHERE(status,"cancelado"|DATE(created_at),customer)""",
 ]
 
 async def main():
+  print("what bro")
+
   dataframes = pickle.load(open('/home/ubuntu/dataframes.pickle', 'rb'))
 
-  import ptvsd
-  ptvsd.enable_attach(address=('localhost', 5678), redirect_output=True)
-  ptvsd.wait_for_attach()
+  print("loaded")
+
+  # import ptvsd
+  # ptvsd.enable_attach(address=('localhost', 5678), redirect_output=True)
+  # ptvsd.wait_for_attach()
   # breakpoint()
 
   next_week = datetime.now() + timedelta(6 - datetime.now().weekday())
-  
+
+  order_types = {
+    'id': 'str',
+    'created_at': 'int',
+    'customer': 'int',
+    'status': 'int',
+    'cupom': 'int',
+    'payment_type': 'int',
+    'periodo_inicio': 'int',
+    'periodo_fim': 'int',
+    'is_recurrent': 'int',
+    # 'DATE(created_at)': ''
+    'is_kit': 'int',
+    'shipping_address_postal_code': 'int',
+    'shipping_address_district': 'int',
+    'shipping_address_address_locality': 'int',
+    'shipping_address_address_region': 'int',
+    'discount_codes': 'int',
+    'total_price': 'int',
+    'subtotal_price': 'int',
+    'freight_price': 'int',
+    'total_discounts': 'int',
+  }
+
+  cols_and_types = {}
+  for column, type in order_types.items():
+    assert(type in ['int', 'str', 'float', 'bool'])
+    cols_and_types[column] = pd.Series([], dtype=type)
+  dataframes['order'] = pd.DataFrame(cols_and_types)
+
   frame = feat.assemble(
     FEATURES,
     dataframes,

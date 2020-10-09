@@ -14,7 +14,10 @@ def __get_hashable_columns(df):
   # ptvsd.enable_attach(address=('localhost', 5678), redirect_output=True)
   # ptvsd.wait_for_attach()
   # breakpoint()
-  
+
+  if df.empty:
+    return df.columns
+
   for column in df.columns:
     if df[column].first_valid_index() is None:
       print("WARNING: no valid index")
@@ -44,7 +47,7 @@ def drop_hashable_duplicates(df, method='ignore'):
 
   df = stringify_unhashables(df)
   return df.drop_duplicates()
-  
+
   hashable_columns = __get_hashable_columns(df)
   if set(df.columns) != set(hashable_columns):
     minus = set(df.columns) - set(hashable_columns)

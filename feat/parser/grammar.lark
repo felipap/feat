@@ -33,7 +33,7 @@ primitive:
 //  | "[" [primitive ("," primitive)*] "]" -> array
 
 FUNCTION_NAME: /[A-Z_][A-Z0-9_]+/
-TABLE_NAME: /[A-Z][a-z_0-9]*/
+TABLE_NAME: /[A-Z][A-Za-z_0-9]*/
 LOWERCASE: /[a-z_][a-z_0-9]+/
 
 %import common.CNAME

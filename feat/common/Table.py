@@ -127,7 +127,7 @@ class Table(object):
       frame_df = frame.get_stripped()
 
       how = 'left'
-      # if 'FWD(MEAN_DIFF(Line_items{CMONTH(date)=CMONTH(order.date)}.SUM(quantity|CMONTH(order.date),product),CMONTH(date)),1,CMONTH(date))' in frame_df.columns:
+      # if 'FWD(MEAN_DIFF(lineitems{CMONTH(date)=CMONTH(order.date)}.SUM(quantity|CMONTH(order.date),product),CMONTH(date)),1,CMONTH(date))' in frame_df.columns:
       #   print(frame_df.info())
       #   print(self._dataframe.info())
       #   sys.exit(0)

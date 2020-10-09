@@ -139,7 +139,7 @@ def assemble_column(ctx, tree):
     # version, but that might be too expensive. For that reason we should do
     # `result.fill_data(shifted, child.fillnan)` in functions inside all.py, so
     # that fillnan information won't get lost!
-    
+
     # return ctx.merge_frame_with_df(child, on=list(child.pivots))
     ctx.merge_frame_with_df(child, on=list(child.pivots))
     return child
@@ -184,7 +184,6 @@ def assemble_column(ctx, tree):
   # below, Pandas will throw an error.
   # print("Result", ctx.df.columns, child.get_stripped().columns)
 
-  # print("end result is", ctx.df.columns, child, "\n\n")
 
   # result = ctx.table.create_subframe(tree.get_name(), ctx.get_pivots_for_table(ctx.current))
   result = ctx.table.create_subframe(tree.get_name(), copied.pivots)

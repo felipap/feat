@@ -7,7 +7,7 @@ automatically assembles a dataframe containing those features.
 Feature descriptions are strings like:
 
 ```
-TIME_SINCE_SEEN(Line_item.SUM(quantity|DATE(order.date),order.customer))
+TIME_SINCE_SEEN(lineitem.SUM(quantity|DATE(order.date),order.customer))
 ```
 
 
