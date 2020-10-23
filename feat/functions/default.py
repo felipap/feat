@@ -237,11 +237,13 @@ register_function('COUNT', call_count, num_args=1, takes_pivots=True)
 
 def call_count_where(ctx, name, args, pivots):
   child = args[0]
-  value = args[1]
+  value = eval(args[1])
 
   # FIXME: childResult should be used to generate the thing below, not ctx.df
   # and childName
-  value = value.replace('"', '')
+
+  # value = value.replace('"', '')
+
   filtered = ctx.df[ctx.df[child.name] == value]
   agg = filtered.groupby(pivots).agg({ child.name: ['count'] })
   agg.columns = [name]

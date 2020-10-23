@@ -28,6 +28,7 @@ groupby: "|" this_column ("," this_column)*
 primitive:
   | /[0-9]+/ -> number
   | SIGNED_NUMBER -> number
+  | /(True|False|None)/ -> string
   | /[ubf]?r?("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i -> string
 //  | "`" /[^``]*/ "`" -> escaped
 //  | "[" [primitive ("," primitive)*] "]" -> array
